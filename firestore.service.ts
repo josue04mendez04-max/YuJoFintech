@@ -90,7 +90,7 @@ export const updateMovementStatus = async (
 ): Promise<void> => {
   try {
     const movementRef = doc(db, COLLECTION_NAME, id);
-    const updateData: any = { status };
+    const updateData: { status: MovementStatus; cutId?: string } = { status };
     if (cutId) {
       updateData.cutId = cutId;
     }
