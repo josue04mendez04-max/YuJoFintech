@@ -8,7 +8,8 @@ import {
   doc, 
   updateDoc,
   writeBatch,
-  orderBy
+  orderBy,
+  setDoc
 } from 'firebase/firestore';
 import { db } from './firebase.config';
 import { Movement, MovementStatus } from './types';
@@ -54,8 +55,9 @@ export const fetchMovements = async (): Promise<Movement[]> => {
  */
 export const addMovement = async (movement: Movement): Promise<void> => {
   try {
-    const movementsRef = collection(db, COLLECTION_NAME);
-    await addDoc(movementsRef, {
+    // Use setDoc with the movement's ID to ensure consistency
+    const movementRef = doc(db, COLLECTION_NAME, movement.id);
+    await setDoc(movementRef, {
       ...movement,
       timestamp: new Date().toISOString()
     });
