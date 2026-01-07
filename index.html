@@ -55,6 +55,25 @@
     .custom-scrollbar::-webkit-scrollbar { width: 5px; }
     .custom-scrollbar::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.05); }
     .custom-scrollbar::-webkit-scrollbar-thumb { background: #E1AD01; border-radius: 10px; }
+
+    /* Liquid Glass Button (Mostaza) */
+    .liquid-button {
+      background: rgba(212, 160, 23, 0.8);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+      transition: all 0.3s ease;
+    }
+    .liquid-button:hover {
+      transform: translateY(-2px);
+      background: rgba(212, 160, 23, 1);
+      box-shadow: 0 8px 25px rgba(212, 160, 23, 0.4);
+    }
+    .liquid-button:active {
+      transform: translateY(0);
+      box-shadow: 0 2px 10px rgba(212, 160, 23, 0.3);
+    }
     
     @media print {
       .no-print { display: none !important; }

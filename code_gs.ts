@@ -2,7 +2,7 @@
 /*
   GOOGLE APPS SCRIPT - Code.gs
   Copia este código íntegro en el editor de scripts de tu Google Sheet.
-  Asegúrate de tener dos hojas llamadas: "MOVIMIENTOS" y "CORTES"
+  Asegúrate de tener una hoja llamada: "MOVIMIENTOS"
 
   IMPORTANTE PARA EVITAR "FAILED TO FETCH":
   1. Ve a "Implementar" (Deploy) -> "Nueva implementación".
@@ -12,19 +12,13 @@
   5. Copia la URL generada y pégala en App.tsx (API_URL).
 */
 
-/** 
 // 1. FUNCIÓN PARA LEER (Entrega los datos al frontend)
 function doGet() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const sheet = ss.getSheetByName("MOVIMIENTOS");
-  
-  // Si la hoja no existe, la creamos o manejamos el error
-  if (!sheet) return ContentService.createTextOutput(JSON.stringify([])).setMimeType(ContentService.MimeType.JSON);
-  
+  const sheet = ss.getSheetByName("MOVIMIENTOS") || ss.insertSheet("MOVIMIENTOS");
   const data = sheet.getDataRange().getValues();
-  if (data.length < 2) return ContentService.createTextOutput(JSON.stringify([])).setMimeType(ContentService.MimeType.JSON);
+  if (data.length < 2) return ContentService.createTextOutput("[]").setMimeType(ContentService.MimeType.JSON);
   
-  // Convertir las filas de la hoja en objetos JSON
   const headers = data[0];
   const movements = data.slice(1).map(row => {
     let obj = {};
@@ -42,52 +36,62 @@ function doGet() {
     });
     return obj;
   });
-
-  return ContentService.createTextOutput(JSON.stringify(movements))
-    .setMimeType(ContentService.MimeType.JSON);
+  return ContentService.createTextOutput(JSON.stringify(movements)).setMimeType(ContentService.MimeType.JSON);
 }
 
-// 2. FUNCIÓN PARA GUARDAR (Recibe datos del frontend)
+// 2. FUNCIÓN PARA PROCESAR ACCIONES (Recibe datos del frontend)
 function doPost(e) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const params = JSON.parse(e.postData.contents);
+  const action = params.action; // Determinamos qué hacer
+  const payload = params.payload || params; // Compatibilidad
+
+  const sheet = ss.getSheetByName("MOVIMIENTOS") || ss.insertSheet("MOVIMIENTOS");
   
-  // Manejo de Tipos de Entrada
-  if (params.type === 'SUMMARY_CUT') {
-    const cutSheet = ss.getSheetByName("CORTES") || ss.insertSheet("CORTES");
-    if (cutSheet.getLastRow() === 0) {
-      cutSheet.appendRow(["ID", "FECHA", "INGRESOS", "GASTOS", "BALANCE", "FISICO", "DIFERENCIA"]);
-    }
-    cutSheet.appendRow([
-      params.id,
-      params.date,
-      params.ingresosTotal,
-      params.gastosTotal,
-      params.balanceSistema,
-      params.conteoFisico,
-      params.diferencia
-    ]);
-    return ContentService.createTextOutput("Corte Registrado").setMimeType(ContentService.MimeType.TEXT);
+  // Asegurar headers si la hoja está vacía
+  if (sheet.getLastRow() === 0) {
+    sheet.appendRow(["ID", "FECHA", "TIPO", "CATEGORIA", "MONTO", "RESPONSABLE", "STATUS", "ID_CORTE", "DESCRIPCION"]);
   }
 
-  // Registro de Movimiento Estándar
-  const sheet = ss.getSheetByName("MOVIMIENTOS") || ss.insertSheet("MOVIMIENTOS");
-  if (sheet.getLastRow() === 0) {
-    sheet.appendRow(["ID", "FECHA", "TIPO", "CATEGORIA", "MONTO", "RESPONSABLE", "STATUS", "ID_CORTE", "AUTORIZACION"]);
+  // --- ACCIÓN: ELIMINAR REGISTRO ---
+  if (action === 'DELETE') {
+    const values = sheet.getDataRange().getValues();
+    for (let i = 1; i < values.length; i++) {
+      if (values[i][0] == payload.id) {
+        sheet.deleteRow(i + 1);
+        break;
+      }
+    }
+    return ContentService.createTextOutput("Eliminado").setMimeType(ContentService.MimeType.TEXT);
   }
-  
+
+  // --- ACCIÓN: CORTE DE CAJA (Archivar movimientos) ---
+  if (action === 'CORTE') {
+    const values = sheet.getDataRange().getValues();
+    const idsToArchive = payload.movementIds || payload.ids;
+    const cutId = payload.cutId;
+    for (let i = 1; i < values.length; i++) {
+      if (idsToArchive.includes(values[i][0])) {
+        sheet.getRange(i + 1, 7).setValue("ARCHIVADO"); // Columna STATUS
+        sheet.getRange(i + 1, 8).setValue(cutId); // Columna ID_CORTE
+      }
+    }
+    return ContentService.createTextOutput("Corte Procesado").setMimeType(ContentService.MimeType.TEXT);
+  }
+
+  // --- ACCIÓN POR DEFECTO: AGREGAR REGISTRO ---
+  const m = payload;
   sheet.appendRow([
-    params.id,
-    params.date,
-    params.type,
-    params.category || "General",
-    params.amount,
-    params.responsible,
-    params.status,
-    params.cutId || "",
-    params.authorization
+    m.id,
+    m.date,
+    m.type,
+    m.category || "General",
+    m.amount,
+    m.responsible,
+    m.status,
+    m.cutId || "",
+    m.description || ""
   ]);
   
   return ContentService.createTextOutput("Éxito").setMimeType(ContentService.MimeType.TEXT);
 }
-**/
