@@ -9,9 +9,7 @@ import Sidebar from './components/Sidebar';
 import PinPad from './components/PinPad';
 import Receipt from './components/Receipt';
 import CorteReceipt from './components/CorteReceipt';
-
-// URL de implementación de Google Apps Script (Debe estar publicada como 'Anyone' / 'Cualquiera')
-const API_URL = 'https://script.google.com/macros/s/AKfycbwDrsC4rdj7i61hVnuy6VVPf5qo0kyS3-o0BPQ7w0F-F3T0BsvTnUG4LYc0RXG3-Cmt/exec';
+import * as FirestoreService from './firestore.service';
 
 const App: React.FC = () => {
   const [view, setView] = useState<'dashboard' | 'notaria' | 'contabilidad' | 'corte'>('dashboard');
@@ -42,36 +40,13 @@ const App: React.FC = () => {
     setLastSyncError(null);
 
     try {
-      // Intentamos la petición con un timeout
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000);
-
-      const res = await fetch(API_URL, { signal: controller.signal });
-      clearTimeout(timeoutId);
-
-      if (!res.ok) throw new Error(`HTTP Error: ${res.status}`);
-      
-      const data = await res.json();
-      
-      if (Array.isArray(data)) {
-        const normalizedData = data.map(m => ({
-          ...m,
-          amount: Number(m.amount),
-          type: m.type as MovementType,
-          status: m.status as MovementStatus
-        }));
-        setMovements(normalizedData);
-        setSyncStatus('synced');
-        console.log("YuJo: Sincronización exitosa con la nube.");
-      } else {
-        throw new Error("Formato de datos inválido desde la nube");
-      }
+      const data = await FirestoreService.fetchMovements();
+      setMovements(data);
+      setSyncStatus('synced');
+      console.log("YuJo: Sincronización exitosa con Firebase Firestore.");
     } catch (err: any) {
-      const errorMsg = err.name === 'AbortError' ? 'Tiempo de espera agotado' : 'Error de red o permisos (CORS)';
-      console.error(`YuJo Sync Error: ${errorMsg}`, err);
-      setLastSyncError(err.message === 'Failed to fetch' 
-        ? "No se pudo conectar con YuJo Cloud. Verifica que la App Script esté publicada como 'Anyone'." 
-        : err.message);
+      console.error(`YuJo Sync Error:`, err);
+      setLastSyncError(err.message || "Error al conectar con Firebase Firestore");
       setSyncStatus('error');
     } finally {
       setIsLoading(false);
@@ -94,18 +69,17 @@ const App: React.FC = () => {
     // 1. Actualización optimista local
     setMovements(prev => [...prev, m]);
 
-    // 2. Persistencia en la nube
+    // 2. Persistencia en Firebase Firestore
     try {
       setSyncStatus('syncing');
-      await fetch(API_URL, {
-        method: 'POST',
-        body: JSON.stringify({ action: 'ADD', payload: m })
-      });
+      await FirestoreService.addMovement(m);
       setSyncStatus('synced');
-      console.log("YuJo: Registro enviado a la nube satisfactoriamente.");
+      console.log("YuJo: Registro enviado a Firebase satisfactoriamente.");
     } catch (error) {
-      console.error("Error al enviar movimiento a la nube:", error);
+      console.error("Error al enviar movimiento a Firebase:", error);
       setSyncStatus('error');
+      // Revertir cambio local en caso de error
+      setMovements(prev => prev.filter(mov => mov.id !== m.id));
     }
   };
 
@@ -120,12 +94,9 @@ const App: React.FC = () => {
       setMovements(prev => prev.filter(m => m.id !== id));
       
       try {
-        await fetch(API_URL, {
-            method: 'POST',
-            body: JSON.stringify({ action: 'DELETE', payload: { id } })
-        });
+        await FirestoreService.deleteMovement(id);
       } catch (err) {
-        console.error("Error eliminando en nube", err);
+        console.error("Error eliminando en Firebase", err);
       }
     });
   };
@@ -158,12 +129,10 @@ const App: React.FC = () => {
       setMovements(updated);
       
       try {
-        await fetch(API_URL, { 
-           method: 'POST', 
-           body: JSON.stringify({ action: 'ADD', payload: returnMovement }) 
-        });
+        await FirestoreService.addMovement(returnMovement);
+        await FirestoreService.updateMovementStatus(m.id, MovementStatus.ARCHIVADO);
       } catch (err) { 
-        console.error("Fallo al registrar retorno en la nube", err);
+        console.error("Fallo al registrar retorno en Firebase", err);
       }
 
       alert("Inversión retornada con éxito.");
@@ -198,17 +167,11 @@ const App: React.FC = () => {
            : m
       ));
       
-      // Enviamos a la nube
+      // Enviamos a Firebase Firestore
       try {
-        await fetch(API_URL, { 
-            method: 'POST', 
-            body: JSON.stringify({ 
-                action: 'CORTE', 
-                payload: { cutId: summary.id, movementIds: idsToArchive } 
-            }) 
-        });
+        await FirestoreService.performCorte(idsToArchive, summary.id);
       } catch (err) { 
-        console.error("Error al registrar corte en la nube", err);
+        console.error("Error al registrar corte en Firebase", err);
       }
 
       setTimeout(() => {
@@ -248,7 +211,7 @@ const App: React.FC = () => {
               {view === 'corte' && 'Corte de Caja'}
             </h1>
             <p className="text-forest-green/70 text-sm font-medium italic">
-              "Hola Josué. Soy YuJo. {syncStatus === 'error' ? 'Estamos trabajando en modo local por problemas de red.' : 'Tu patrimonio está seguro y sincronizado.'}"
+              "Hola Josué. Soy YuJo. {syncStatus === 'error' ? 'Estamos trabajando en modo local por problemas de red.' : 'Tu patrimonio está seguro y sincronizado con Firebase.'}"
             </p>
           </div>
           
@@ -273,7 +236,7 @@ const App: React.FC = () => {
             </div>
             <h3 className="text-xl font-serif font-bold italic text-forest-green mb-2">Error de Conexión</h3>
             <p className="text-sm text-forest-green/50 max-w-sm mb-6">
-              {lastSyncError || "No se pudo establecer comunicación con YuJo Cloud."}
+              {lastSyncError || "No se pudo establecer comunicación con Firebase Firestore."}
             </p>
             <button 
               onClick={fetchMovements}
