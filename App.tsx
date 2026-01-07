@@ -11,7 +11,7 @@ import Receipt from './components/Receipt';
 import CorteReceipt from './components/CorteReceipt';
 
 // URL de implementación de Google Apps Script (Debe estar publicada como 'Anyone' / 'Cualquiera')
-const API_URL = 'https://script.google.com/macros/s/AKfycbwLISn7V_8_qpt-35sFkQ5BXclI7obE6SESunNROjwIhcBGM6JIjSRdlGAAf8Z0s7Ig/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbwDrsC4rdj7i61hVnuy6VVPf5qo0kyS3-o0BPQ7w0F-F3T0BsvTnUG4LYc0RXG3-Cmt/exec';
 
 const App: React.FC = () => {
   const [view, setView] = useState<'dashboard' | 'notaria' | 'contabilidad' | 'corte'>('dashboard');
