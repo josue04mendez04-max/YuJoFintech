@@ -1,0 +1,83 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>YuJoFintech</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,200..800;1,6..72,200..800&family=Noto+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            'bone-white': '#F2F0E6',
+            'forest-green': '#1B3022',
+            'mustard': '#E1AD01',
+          },
+          fontFamily: {
+            'serif': ['Newsreader', 'serif'],
+            'sans': ['Noto Sans', 'sans-serif'],
+          },
+          boxShadow: {
+            'liquid': '10px 10px 30px #d9d7ce, -10px -10px 30px #ffffff',
+            'glass-panel': '0 8px 32px 0 rgba(0, 0, 0, 0.4), inset 0 1px 1px rgba(255,255,255,0.1)',
+          }
+        },
+      },
+    };
+  </script>
+  <style>
+    body { background-color: #F2F0E6; color: #1B3022; overflow-x: hidden; }
+    .glass {
+      background: rgba(27, 48, 34, 0.85);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-top-color: rgba(255, 255, 255, 0.2);
+    }
+    .liquid-btn {
+      background: #F2F0E6;
+      box-shadow: 10px 10px 30px #d9d7ce, -10px -10px 30px #ffffff;
+      transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    .liquid-btn:active {
+      box-shadow: inset 4px 4px 10px #d9d7ce, inset -4px -4px 10px #ffffff;
+      transform: scale(0.97);
+    }
+    .mustard-glow {
+      text-shadow: 0 0 15px rgba(225, 173, 1, 0.4);
+    }
+    .custom-scrollbar::-webkit-scrollbar { width: 5px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.05); }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #E1AD01; border-radius: 10px; }
+    
+    @media print {
+      .no-print { display: none !important; }
+      .print-only { display: block !important; position: static !important; }
+      body { background: white; margin: 0; }
+      @page { size: auto; margin: 0; }
+    }
+    .print-only { display: none; }
+  </style>
+  <script type="importmap">
+  {
+    "imports": {
+      "react": "https://esm.sh/react@^19.2.3",
+      "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+      "react/": "https://esm.sh/react@^19.2.3/",
+      "recharts": "https://esm.sh/recharts@^3.6.0"
+    }
+  }
+  </script>
+<link rel="stylesheet" href="/index.css">
+</head>
+<body class="font-sans selection:bg-mustard/30">
+  <div id="root"></div>
+<script type="module" src="/index.tsx"></script>
+</body>
+</html>
