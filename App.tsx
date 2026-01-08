@@ -17,6 +17,9 @@ const App: React.FC = () => {
   // Estado de movimientos
   const [movements, setMovements] = useState<Movement[]>([]);
   
+  // Saldo inicial para el corte actual (se obtiene del último corte)
+  const [saldoInicial, setSaldoInicial] = useState<number>(0);
+  
   const [vault, setVault] = useState<VaultCount>({
     bills: { '1000': 0, '500': 0, '200': 0, '100': 0, '50': 0, '20': 0 },
     coins: { '10': 0, '5': 0, '2': 0, '1': 0, '0.5': 0 }
@@ -42,6 +45,14 @@ const App: React.FC = () => {
     try {
       const data = await FirestoreService.fetchMovements();
       setMovements(data);
+      
+      // Obtener el último corte para el saldo inicial
+      const lastCorte = await FirestoreService.getLastCorte();
+      if (lastCorte) {
+        // El saldo inicial del próximo corte es el conteo físico del último corte
+        setSaldoInicial(lastCorte.conteoFisico);
+      }
+      
       setSyncStatus('synced');
       console.log("YuJo: Sincronización exitosa con Firebase Firestore.");
     } catch (err: any) {
@@ -143,15 +154,46 @@ const App: React.FC = () => {
     const active = movements.filter(m => m.status === MovementStatus.PENDIENTE_CORTE);
     const ingresos = active.filter(m => m.type === MovementType.INGRESO).reduce((a, b) => a + b.amount, 0);
     const gastos = active.filter(m => m.type === MovementType.GASTO).reduce((a, b) => a + b.amount, 0);
+    const inversiones = active.filter(m => m.type === MovementType.INVERSION).reduce((a, b) => a + b.amount, 0);
+    
+    // Fórmula correcta: Saldo_Final = Saldo_Inicial + Ingresos - Gastos - Inversiones
+    const balanceSistema = saldoInicial + ingresos - gastos - inversiones;
+    const diferencia = physicalTotal - balanceSistema;
+    
+    // Si hay diferencia, preguntar por el ajuste
+    let ajuste: number | undefined = undefined;
+    if (Math.abs(diferencia) >= 0.01) {
+      const ajusteStr = prompt(
+        `Se detectó una diferencia de $${diferencia.toFixed(2)}.\n\n` +
+        `Conteo Físico: $${physicalTotal.toFixed(2)}\n` +
+        `Balance Sistema: $${balanceSistema.toFixed(2)}\n\n` +
+        `Para cuadrar la contabilidad, se debe crear un Asiento de Ajuste.\n` +
+        `¿Confirmas el ajuste de $${diferencia.toFixed(2)}? (Si/No)`,
+        'Si'
+      );
+      
+      if (ajusteStr?.toLowerCase() === 'si' || ajusteStr?.toLowerCase() === 's') {
+        ajuste = diferencia;
+      } else {
+        alert('Corte cancelado. Por favor revisa el conteo físico o los movimientos.');
+        return;
+      }
+    }
     
     const summary: CorteSummary = {
       id: `CORTE-${Date.now().toString().slice(-6)}`,
       date: new Date().toLocaleDateString(),
+      fechaInicio: active.length > 0 ? active[active.length - 1].date : new Date().toISOString().split('T')[0],
+      fechaFin: new Date().toISOString().split('T')[0],
+      saldoInicial: saldoInicial,
       ingresosTotal: ingresos,
       gastosTotal: gastos,
-      balanceSistema: ingresos - gastos,
+      inversionesTotal: inversiones,
+      desinversionesTotal: 0, // Por ahora, se calculará en futuros retornos
+      balanceSistema: balanceSistema,
       conteoFisico: physicalTotal,
-      diferencia: physicalTotal - (ingresos - gastos),
+      diferencia: diferencia,
+      ajuste: ajuste,
       movements: active
     };
 
@@ -167,9 +209,14 @@ const App: React.FC = () => {
            : m
       ));
       
+      // El nuevo saldo inicial será el conteo físico de este corte
+      setSaldoInicial(physicalTotal);
+      
       // Enviamos a Firebase Firestore
       try {
         await FirestoreService.performCorte(idsToArchive, summary.id);
+        await FirestoreService.saveCorte(summary);
+        console.log("YuJo: Corte guardado exitosamente en Firebase.");
       } catch (err) { 
         console.error("Error al registrar corte en Firebase", err);
       }
@@ -279,6 +326,7 @@ const App: React.FC = () => {
                 movements={movements}
                 physicalTotal={physicalTotal}
                 onConfirmCorte={performCorte}
+                saldoInicial={saldoInicial}
               />
             )}
           </>

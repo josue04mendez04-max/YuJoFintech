@@ -37,25 +37,39 @@ const CorteReceipt: React.FC<CorteReceiptProps> = ({ summary }) => {
             <p className="text-xs font-serif italic text-green-700 font-bold">${summary.ingresosTotal.toLocaleString()}</p>
          </div>
          <div className="p-2 bg-gray-50 rounded text-center">
-            <p className="uppercase font-bold text-gray-400 mb-1">Egresos</p>
+            <p className="uppercase font-bold text-gray-400 mb-1">Gastos</p>
             <p className="text-xs font-serif italic text-red-700 font-bold">-${summary.gastosTotal.toLocaleString()}</p>
          </div>
-         <div className="p-2 bg-forest-green text-white rounded text-center">
-            <p className="uppercase font-bold opacity-60 mb-1">Balance</p>
-            <p className="text-xs font-serif italic font-bold">${summary.balanceSistema.toLocaleString()}</p>
+         <div className="p-2 bg-purple-100 rounded text-center">
+            <p className="uppercase font-bold text-gray-400 mb-1">Inversiones</p>
+            <p className="text-xs font-serif italic text-purple-700 font-bold">-${summary.inversionesTotal.toLocaleString()}</p>
          </div>
+      </div>
+
+      <div className="mb-2 bg-gray-50 p-2 rounded text-[7px]">
+         <p className="uppercase font-bold text-gray-400 mb-1">Saldo Inicial</p>
+         <p className="text-sm font-serif italic font-bold">${summary.saldoInicial.toLocaleString()}</p>
+      </div>
+
+      <div className="p-2 bg-forest-green text-white rounded text-center mb-3">
+         <p className="uppercase font-bold opacity-60 mb-1 text-[7px]">Saldo Final (Sistema)</p>
+         <p className="text-base font-serif italic font-bold">${summary.balanceSistema.toLocaleString()}</p>
+         <p className="text-[6px] opacity-60 mt-0.5">{summary.saldoInicial} + {summary.ingresosTotal} - {summary.gastosTotal} - {summary.inversionesTotal}</p>
       </div>
 
       <div className="border border-forest-green p-2 rounded mb-3 flex justify-between items-center bg-gray-50 text-[7px]">
          <div>
-            <p className="uppercase font-bold text-gray-400 mb-1">Conteo</p>
+            <p className="uppercase font-bold text-gray-400 mb-1">Conteo Físico</p>
             <p className="text-lg font-serif font-bold italic">${summary.conteoFisico.toLocaleString()}</p>
          </div>
          <div className="text-right">
             <p className="uppercase font-bold text-gray-400 mb-1">Diferencia</p>
             <p className={`text-base font-mono font-bold ${Math.abs(summary.diferencia) < 0.01 ? 'text-green-600' : 'text-red-600'}`}>
-               ${summary.diferencia.toLocaleString()}
+               {summary.diferencia > 0 ? '+' : ''}${summary.diferencia.toLocaleString()}
             </p>
+            {summary.ajuste !== undefined && Math.abs(summary.ajuste) >= 0.01 && (
+              <p className="text-[6px] text-orange-600 mt-0.5 italic">Ajuste registrado</p>
+            )}
          </div>
       </div>
 
