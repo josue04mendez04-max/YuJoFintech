@@ -243,3 +243,56 @@ export const updateInversion = async (
     throw error;
   }
 };
+
+// ============ CONTEO DE BÓVEDA ============
+
+/**
+ * Save vault count to Firebase
+ */
+export const saveVaultCount = async (vaultData: any): Promise<void> => {
+  try {
+    const vaultRef = doc(db, 'vaultCounts', 'current');
+    await setDoc(vaultRef, {
+      ...vaultData,
+      timestamp: new Date().toISOString(),
+      updatedAt: new Date()
+    });
+  } catch (error) {
+    console.error('Error saving vault count to Firestore:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get vault count from Firebase
+ */
+export const getVaultCount = async (): Promise<any> => {
+  try {
+    const vaultRef = doc(db, 'vaultCounts', 'current');
+    const snapshot = await (await import('firebase/firestore')).getDoc(vaultRef);
+    if (snapshot.exists()) {
+      return snapshot.data();
+    }
+    return null;
+  } catch (error) {
+    console.error('Error getting vault count from Firestore:', error);
+    throw error;
+  }
+};
+
+/**
+ * Listen to vault count changes in real-time
+ */
+export const listenToVaultCount = (
+  callback: (vaultData: any) => void
+): Unsubscribe => {
+  const vaultRef = doc(db, 'vaultCounts', 'current');
+  
+  return onSnapshot(vaultRef, (snapshot) => {
+    if (snapshot.exists()) {
+      callback(snapshot.data());
+    }
+  }, (error) => {
+    console.error('Error listening to vault count:', error);
+  });
+};

@@ -1,6 +1,7 @@
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { VaultCount } from '../types';
+import * as FirestoreService from '../firestore.service';
 
 interface VaultProps {
   count: VaultCount;
@@ -8,6 +9,8 @@ interface VaultProps {
 }
 
 const Vault: React.FC<VaultProps> = ({ count, setCount }) => {
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveMessage, setSaveMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
   const updateBill = (denom: string, val: number) => {
     setCount(prev => ({
       ...prev,
@@ -20,6 +23,21 @@ const Vault: React.FC<VaultProps> = ({ count, setCount }) => {
       ...prev,
       coins: { ...prev.coins, [denom]: Math.max(0, val) }
     }));
+  };
+
+  const handleSealVault = async () => {
+    try {
+      setIsSaving(true);
+      await FirestoreService.saveVaultCount(count);
+      setSaveMessage({ type: 'success', text: 'Bóveda sellada y guardada en Firebase ✓' });
+      setTimeout(() => setSaveMessage(null), 3000);
+    } catch (error) {
+      console.error('Error al guardar bóveda:', error);
+      setSaveMessage({ type: 'error', text: 'Error al guardar. Intenta de nuevo.' });
+      setTimeout(() => setSaveMessage(null), 3000);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const total = useMemo(() => {
@@ -35,6 +53,21 @@ const Vault: React.FC<VaultProps> = ({ count, setCount }) => {
         <p className="text-mustard font-bold text-[8px] sm:text-[9px] uppercase tracking-[0.4em]">
           Contabilidad • Conteo Físico
         </p>
+      </div>
+
+      {/* TOTAL CONSOLIDADO EN TIEMPO REAL - VISIBLE AL INICIO */}
+      <div className="glass rounded-lg sm:rounded-xl p-4 sm:p-6 shadow-lg border border-mustard/30 bg-gradient-to-r from-mustard/5 via-transparent to-mustard/5 flex items-center justify-between gap-4 sm:gap-6">
+         <div className="flex items-center gap-3 sm:gap-4 flex-1">
+            <div className="w-12 sm:w-14 h-12 sm:h-14 rounded-lg bg-mustard/10 flex items-center justify-center text-mustard border border-mustard/20 shadow-lg flex-shrink-0">
+                <span className="material-symbols-outlined text-2xl sm:text-3xl">savings</span>
+            </div>
+            <div className="min-w-0">
+               <p className="text-white/40 text-[8px] sm:text-[9px] uppercase font-bold tracking-[0.3em]">Total en Caja</p>
+               <p className="text-mustard text-2xl sm:text-4xl font-serif font-bold italic">
+                 ${total.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+               </p>
+            </div>
+         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
@@ -100,27 +133,42 @@ const Vault: React.FC<VaultProps> = ({ count, setCount }) => {
         </div>
       </div>
 
-      {/* TOTAL CONSOLIDADO EN TIEMPO REAL */}
-      <div className="sticky bottom-4 left-4 right-4 mx-auto glass rounded-lg sm:rounded-xl p-4 sm:p-6 shadow-lg border border-mustard/30 flex items-center justify-between gap-4 sm:gap-6 max-w-2xl w-full bg-gradient-to-r from-mustard/5 via-transparent to-mustard/5">
-         <div className="flex items-center gap-3 sm:gap-4 flex-1">
-            <div className="w-12 sm:w-14 h-12 sm:h-14 rounded-lg bg-mustard/10 flex items-center justify-center text-mustard border border-mustard/20 shadow-lg flex-shrink-0">
-                <span className="material-symbols-outlined text-2xl sm:text-3xl">savings</span>
-            </div>
-            <div className="min-w-0">
-               <p className="text-white/40 text-[8px] sm:text-[9px] uppercase font-bold tracking-[0.3em] truncate">Total en Caja</p>
-               <p className="text-mustard text-2xl sm:text-4xl font-serif font-bold italic truncate">
-                 ${total.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-               </p>
-            </div>
-         </div>
-         <button 
-           onClick={() => setCount({
-              bills: { '1000': 0, '500': 0, '200': 0, '100': 0, '50': 0, '20': 0 },
-              coins: { '10': 0, '5': 0, '2': 0, '1': 0, '0.5': 0 }
-           })} 
-           className="text-white/20 hover:text-red-400 transition-all p-2 hover:bg-red-400/10 rounded-lg flex-shrink-0"
-           title="Reiniciar conteo"
-         >
-            <span className="material-symbols-outlined text-xl sm:text-2xl">refresh</span>
-         </button>
+      {/* BOTONES DE ACCIÓN */}
+      <div className="flex justify-center gap-4 flex-wrap">
+        <button 
+          onClick={handleSealVault}
+          disabled={isSaving}
+          className="liquid-btn text-forest-green font-bold py-3 px-8 rounded-lg md:rounded-2xl uppercase tracking-[0.2em] hover:scale-[1.02] disabled:opacity-50 flex items-center gap-2"
+        >
+          <span className="material-symbols-outlined">verified</span>
+          {isSaving ? 'Guardando...' : 'Sellar Bóveda'}
+        </button>
+        
+        <button 
+          onClick={() => setCount({
+             bills: { '1000': 0, '500': 0, '200': 0, '100': 0, '50': 0, '20': 0 },
+             coins: { '10': 0, '5': 0, '2': 0, '1': 0, '0.5': 0 }
+          })} 
+          className="text-white/40 hover:text-red-400 transition-all px-4 py-3 hover:bg-red-400/10 rounded-lg font-bold text-sm uppercase tracking-widest flex items-center gap-2"
+          title="Reiniciar conteo"
+        >
+          <span className="material-symbols-outlined">refresh</span>
+          Limpiar
+        </button>
       </div>
+
+      {/* MENSAJE DE ESTADO */}
+      {saveMessage && (
+        <div className={`glass rounded-lg p-4 text-center font-bold ${
+          saveMessage.type === 'success' 
+            ? 'bg-green-500/20 text-green-300 border border-green-500/30' 
+            : 'bg-red-500/20 text-red-300 border border-red-500/30'
+        }`}>
+          {saveMessage.text}
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default Vault;
