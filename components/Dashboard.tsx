@@ -18,19 +18,23 @@ const Dashboard: React.FC<DashboardProps> = ({ movements, inversiones, vault, on
     const ingresos = activeCycle.filter(m => m.type === MovementType.INGRESO).reduce((a, b) => a + b.amount, 0);
     const gastos = activeCycle.filter(m => m.type === MovementType.GASTO).reduce((a, b) => a + b.amount, 0);
     
-    // Inversiones CONGELADAS: dinero que salió pero volverá (status EN_CURSO en movements)
-    // IMPORTANTE: Estas se restan del balance porque ya salieron de caja
-    const inversionesCongeladas = movements
-      .filter(m => m.status === MovementStatus.EN_CURSO)
+    // Inversiones ACTIVAS: dinero que salió de caja y se transformó en activos
+    // Este dinero NO está disponible para gastar, pero SÍ forma parte del patrimonio
+    const inversionesActivas = activeCycle
+      .filter(m => m.type === MovementType.INVERSION)
       .reduce((a, b) => a + b.amount, 0);
     
-    // Balance real disponible = (Ingresos - Gastos) - Inversiones Congeladas
-    // Porque las inversiones ya salieron de la caja pero vuelven después
-    const balanceDisponible = ingresos - gastos - inversionesCongeladas;
+    // Balance disponible = Ingresos - Gastos - Inversiones
+    // (Las inversiones ya salieron de la caja)
+    const balanceDisponible = ingresos - gastos - inversionesActivas;
+    
+    // Capital Total = Efectivo Disponible + Valor de Portafolio (Inversiones)
+    const capitalTotal = balanceDisponible + inversionesActivas;
     
     return { 
-      balance: balanceDisponible,  // Este es el que sale en el dashboard
-      inversionesCongeladas
+      balance: balanceDisponible,  // Saldo en Efectivo (lo que hay para gastar)
+      inversionesActivas,          // Valor de Portafolio (lo que está invertido)
+      capitalTotal                 // Capital Total (Efectivo + Portafolio)
     };
   }, [movements, inversiones]);
 
@@ -53,16 +57,17 @@ const Dashboard: React.FC<DashboardProps> = ({ movements, inversiones, vault, on
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 md:gap-10">
-      {/* Panel Principal */}
+      {/* Panel Principal - Saldo en Efectivo */}
       <div className="lg:col-span-2 glass rounded-xl sm:rounded-2xl md:rounded-[32px] p-4 sm:p-8 md:p-12 text-white flex flex-col justify-between shadow-glass-panel relative overflow-hidden">
         <div className="absolute top-0 right-0 p-6 sm:p-12 opacity-5 pointer-events-none">
           <span className="material-symbols-outlined text-[4rem] sm:text-[8rem] md:text-[12rem]">account_balance</span>
         </div>
         <div className="relative z-10">
-          <p className="text-white/40 font-bold uppercase tracking-[0.4em] text-[8px] sm:text-[9px] md:text-[10px] mb-2 sm:mb-4">Balance en Sistema • Ciclo Actual</p>
+          <p className="text-white/40 font-bold uppercase tracking-[0.4em] text-[8px] sm:text-[9px] md:text-[10px] mb-2 sm:mb-4">Saldo en Efectivo • Disponible</p>
           <h3 className="text-3xl sm:text-5xl md:text-8xl font-serif font-bold italic tracking-tighter mustard-glow">
             ${stats.balance.toLocaleString(undefined, { minimumFractionDigits: 2 })}
           </h3>
+          <p className="text-white/30 text-[8px] sm:text-[10px] mt-2 italic">Lo que hay para gastar ahora</p>
         </div>
         <div className="mt-4 sm:mt-8 md:mt-12 h-24 sm:h-32 md:h-44 w-full relative z-10">
           <ResponsiveContainer width="100%" height="100%">
@@ -79,12 +84,20 @@ const Dashboard: React.FC<DashboardProps> = ({ movements, inversiones, vault, on
         </div>
       </div>
 
-      {/* Inversiones y Acciones */}
+      {/* Inversiones y Capital Total */}
       <div className="flex flex-col gap-4 sm:gap-6 md:gap-8">
         <div className="glass rounded-xl sm:rounded-2xl md:rounded-[32px] p-5 sm:p-8 md:p-10 text-white shadow-glass-panel flex-1 border-t border-white/20">
-          <p className="text-white/40 font-bold uppercase tracking-[0.4em] text-[8px] sm:text-[9px] md:text-[10px] mb-2 sm:mb-3">Inversiones Activas</p>
-          <h3 className="text-2xl sm:text-3xl md:text-5xl font-serif font-bold italic mb-4 sm:mb-8 text-mustard tracking-tight">${stats.inversionesCongeladas.toLocaleString()}</h3>
-          <div className="space-y-3 sm:space-y-5 pt-3 sm:pt-6 border-t border-white/10 text-[8px] sm:text-[10px] uppercase tracking-[0.3em] font-bold opacity-50">
+          <p className="text-white/40 font-bold uppercase tracking-[0.4em] text-[8px] sm:text-[9px] md:text-[10px] mb-2 sm:mb-3">Valor de Portafolio</p>
+          <h3 className="text-2xl sm:text-3xl md:text-5xl font-serif font-bold italic mb-2 text-purple-400 tracking-tight">${stats.inversionesActivas.toLocaleString()}</h3>
+          <p className="text-white/30 text-[7px] sm:text-[8px] mb-4 italic">Dinero que se transformó en activos</p>
+          
+          <div className="pt-3 sm:pt-4 border-t border-white/10">
+            <p className="text-white/40 font-bold uppercase tracking-[0.4em] text-[7px] sm:text-[8px] mb-1">Capital Total</p>
+            <p className="text-mustard text-xl sm:text-2xl font-serif font-bold italic">${stats.capitalTotal.toLocaleString()}</p>
+            <p className="text-white/20 text-[7px] mt-1">Efectivo + Portafolio</p>
+          </div>
+          
+          <div className="space-y-3 sm:space-y-4 pt-3 sm:pt-5 mt-3 sm:mt-5 border-t border-white/10 text-[8px] sm:text-[10px] uppercase tracking-[0.3em] font-bold opacity-50">
              <div className="flex justify-between items-center">
                 <span>Riesgo</span>
                 <span className="text-green-400">Controlado</span>

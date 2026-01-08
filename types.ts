@@ -51,10 +51,17 @@ export interface VaultCount {
 export interface CorteSummary {
   id: string;
   date: string;
+  fechaInicio?: string;
+  fechaFin?: string;
+  saldoInicial: number;
   ingresosTotal: number;
   gastosTotal: number;
-  balanceSistema: number;
+  inversionesTotal: number; // Dinero que se transforma en activos
+  desinversionesTotal: number; // Retornos de inversiones
+  balanceSistema: number; // Saldo Final = Saldo Inicial + Ingresos - Gastos - Inversiones + Desinversiones
   conteoFisico: number;
   diferencia: number;
+  ajuste?: number; // Asiento de ajuste (sobrante o faltante)
   movements: Movement[];
+  timestamp?: string;
 }

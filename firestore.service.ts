@@ -14,11 +14,12 @@ import {
   Unsubscribe
 } from 'firebase/firestore';
 import { db } from './firebase.config';
-import { Movement, MovementStatus, Inversion } from './types';
+import { Movement, MovementStatus, Inversion, CorteSummary } from './types';
 
 // Collection name for this app
 const COLLECTION_NAME = 'yujofintech';
 const INVERSIONES_COLLECTION = 'inversiones';
+const CORTES_COLLECTION = 'cortes';
 
 /**
  * Fetch all movements from Firestore
@@ -295,4 +296,88 @@ export const listenToVaultCount = (
   }, (error) => {
     console.error('Error listening to vault count:', error);
   });
+};
+
+// ============ CORTES DE CAJA ============
+
+/**
+ * Helper function to map Firestore document to CorteSummary
+ */
+const mapDocumentToCorteSummary = (doc: any): CorteSummary => {
+  const data = doc.data();
+  return {
+    id: doc.id,
+    date: data.date,
+    fechaInicio: data.fechaInicio,
+    fechaFin: data.fechaFin,
+    saldoInicial: Number(data.saldoInicial),
+    ingresosTotal: Number(data.ingresosTotal),
+    gastosTotal: Number(data.gastosTotal),
+    inversionesTotal: Number(data.inversionesTotal),
+    desinversionesTotal: Number(data.desinversionesTotal),
+    balanceSistema: Number(data.balanceSistema),
+    conteoFisico: Number(data.conteoFisico),
+    diferencia: Number(data.diferencia),
+    ajuste: data.ajuste !== undefined ? Number(data.ajuste) : undefined,
+    movements: data.movements || [],
+    timestamp: data.timestamp
+  };
+};
+
+/**
+ * Save a corte summary to Firestore
+ */
+export const saveCorte = async (corte: CorteSummary): Promise<void> => {
+  try {
+    const corteRef = doc(db, CORTES_COLLECTION, corte.id);
+    await setDoc(corteRef, {
+      ...corte,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('Error saving corte to Firestore:', error);
+    throw error;
+  }
+};
+
+/**
+ * Fetch all cortes from Firestore
+ */
+export const fetchCortes = async (): Promise<CorteSummary[]> => {
+  try {
+    const cortesRef = collection(db, CORTES_COLLECTION);
+    const q = query(cortesRef, orderBy('timestamp', 'desc'));
+    const querySnapshot = await getDocs(q);
+    
+    const cortes: CorteSummary[] = [];
+    querySnapshot.forEach((doc) => {
+      cortes.push(mapDocumentToCorteSummary(doc));
+    });
+    
+    return cortes;
+  } catch (error) {
+    console.error('Error fetching cortes from Firestore:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get the last corte to determine the initial balance for the next period
+ */
+export const getLastCorte = async (): Promise<CorteSummary | null> => {
+  try {
+    const cortesRef = collection(db, CORTES_COLLECTION);
+    const q = query(cortesRef, orderBy('timestamp', 'desc'));
+    const querySnapshot = await getDocs(q);
+    
+    if (querySnapshot.empty) {
+      return null;
+    }
+    
+    const doc = querySnapshot.docs[0];
+    return mapDocumentToCorteSummary(doc);
+  } catch (error) {
+    console.error('Error getting last corte from Firestore:', error);
+    throw error;
+  }
 };
