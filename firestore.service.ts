@@ -9,13 +9,16 @@ import {
   updateDoc,
   writeBatch,
   orderBy,
-  setDoc
+  setDoc,
+  onSnapshot,
+  Unsubscribe
 } from 'firebase/firestore';
 import { db } from './firebase.config';
-import { Movement, MovementStatus } from './types';
+import { Movement, MovementStatus, Inversion } from './types';
 
 // Collection name for this app
 const COLLECTION_NAME = 'yujofintech';
+const INVERSIONES_COLLECTION = 'inversiones';
 
 /**
  * Fetch all movements from Firestore
@@ -122,6 +125,121 @@ export const performCorte = async (
     await batch.commit();
   } catch (error) {
     console.error('Error performing corte in Firestore:', error);
+    throw error;
+  }
+};
+
+// ============ INVERSIONES CONGELADAS ============
+
+/**
+ * Fetch all inversiones (dinero congelado)
+ */
+export const fetchInversiones = async (): Promise<Inversion[]> => {
+  try {
+    const inversionesRef = collection(db, INVERSIONES_COLLECTION);
+    const q = query(inversionesRef, orderBy('fechaInicio', 'desc'));
+    const querySnapshot = await getDocs(q);
+    
+    const inversiones: Inversion[] = [];
+    querySnapshot.forEach((doc) => {
+      const data = doc.data();
+      inversiones.push({
+        id: doc.id,
+        monto: Number(data.monto),
+        descripcion: data.descripcion,
+        tipo: data.tipo,
+        responsable: data.responsable,
+        fechaInicio: data.fechaInicio,
+        fechaEstimadaRetorno: data.fechaEstimadaRetorno,
+        status: data.status,
+        notas: data.notas,
+        timestamp: data.timestamp
+      });
+    });
+    
+    return inversiones;
+  } catch (error) {
+    console.error('Error fetching inversiones from Firestore:', error);
+    throw error;
+  }
+};
+
+/**
+ * Add or update an inversion in real-time to Firestore
+ */
+export const setInversion = async (inversion: Inversion): Promise<void> => {
+  try {
+    const inversionRef = doc(db, INVERSIONES_COLLECTION, inversion.id);
+    await setDoc(inversionRef, {
+      ...inversion,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('Error setting inversion to Firestore:', error);
+    throw error;
+  }
+};
+
+/**
+ * Listen to real-time changes in inversiones
+ */
+export const listenToInversiones = (
+  callback: (inversiones: Inversion[]) => void
+): Unsubscribe => {
+  const inversionesRef = collection(db, INVERSIONES_COLLECTION);
+  const q = query(inversionesRef, orderBy('fechaInicio', 'desc'));
+  
+  return onSnapshot(q, (snapshot) => {
+    const inversiones: Inversion[] = [];
+    snapshot.forEach((doc) => {
+      const data = doc.data();
+      inversiones.push({
+        id: doc.id,
+        monto: Number(data.monto),
+        descripcion: data.descripcion,
+        tipo: data.tipo,
+        responsable: data.responsable,
+        fechaInicio: data.fechaInicio,
+        fechaEstimadaRetorno: data.fechaEstimadaRetorno,
+        status: data.status,
+        notas: data.notas,
+        timestamp: data.timestamp
+      });
+    });
+    callback(inversiones);
+  }, (error) => {
+    console.error('Error listening to inversiones:', error);
+  });
+};
+
+/**
+ * Delete an inversion
+ */
+export const deleteInversion = async (id: string): Promise<void> => {
+  try {
+    const inversionRef = doc(db, INVERSIONES_COLLECTION, id);
+    await deleteDoc(inversionRef);
+  } catch (error) {
+    console.error('Error deleting inversion from Firestore:', error);
+    throw error;
+  }
+};
+
+/**
+ * Update only specific fields of an inversion (for real-time updates)
+ */
+export const updateInversion = async (
+  id: string,
+  updates: Partial<Inversion>
+): Promise<void> => {
+  try {
+    const inversionRef = doc(db, INVERSIONES_COLLECTION, id);
+    await updateDoc(inversionRef, {
+      ...updates,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('Error updating inversion in Firestore:', error);
     throw error;
   }
 };
