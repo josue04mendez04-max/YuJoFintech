@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Movement } from '../types';
 
 interface ReceiptProps {
@@ -7,6 +7,9 @@ interface ReceiptProps {
 }
 
 const Receipt: React.FC<ReceiptProps> = ({ movement }) => {
+  const [editingAuth, setEditingAuth] = useState(false);
+  const [authName, setAuthName] = useState(movement.authorization);
+
   // Componente individual del recibo para reutilización
   const ReceiptCard = () => (
     <div className="bg-white text-forest-green font-sans flex flex-col border border-forest-green/20 p-6 h-full">
@@ -57,12 +60,14 @@ const Receipt: React.FC<ReceiptProps> = ({ movement }) => {
       {/* Firmas Físicas Manuales */}
       <div className="grid grid-cols-2 gap-3 mt-auto">
         <div className="text-center">
-          <div className="h-12 flex items-end justify-center mb-1 border-b border-forest-green/20"></div>
-          <p className="text-[7px] uppercase font-bold text-forest-green tracking-tight">Titular</p>
+          <div className="h-12 flex items-end justify-center mb-2 border-b border-forest-green/20"></div>
+          <p className="text-[7px] uppercase font-bold text-forest-green tracking-tight mb-1">Firma</p>
+          <p className="text-[6px] uppercase font-semibold text-gray-400 tracking-tight">{movement.responsible}</p>
         </div>
         <div className="text-center">
-          <div className="h-12 flex items-end justify-center mb-1 border-b border-forest-green/20"></div>
-          <p className="text-[7px] uppercase font-bold text-forest-green tracking-tight">Autoriza</p>
+          <div className="h-12 flex items-end justify-center mb-2 border-b border-forest-green/20"></div>
+          <p className="text-[7px] uppercase font-bold text-forest-green tracking-tight mb-1">Firma</p>
+          <p className="text-[6px] uppercase font-semibold text-gray-400 tracking-tight">{authName}</p>
         </div>
       </div>
     </div>
@@ -79,6 +84,17 @@ const Receipt: React.FC<ReceiptProps> = ({ movement }) => {
         <div className="flex-1">
           <ReceiptCard />
         </div>
+      </div>
+      
+      {/* Editor de autorización solo visible en pantalla */}
+      <div className="hidden print:hidden fixed bottom-4 right-4 bg-white p-4 rounded-lg shadow-lg z-50 border border-forest-green">
+        <label className="block text-forest-green text-sm font-bold mb-2">Editar nombre de autorización:</label>
+        <input
+          type="text"
+          value={authName}
+          onChange={(e) => setAuthName(e.target.value)}
+          className="w-full border border-forest-green rounded px-3 py-2 text-sm"
+        />
       </div>
     </div>
   );

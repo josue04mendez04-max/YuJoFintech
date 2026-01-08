@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { CorteSummary } from '../types';
 
 interface CorteReceiptProps {
@@ -7,6 +7,11 @@ interface CorteReceiptProps {
 }
 
 const CorteReceipt: React.FC<CorteReceiptProps> = ({ summary }) => {
+  const [editingAuth1, setEditingAuth1] = useState(false);
+  const [editingAuth2, setEditingAuth2] = useState(false);
+  const [auth1Name, setAuth1Name] = useState('');
+  const [auth2Name, setAuth2Name] = useState('');
+
   // Componente individual del recibo de corte
   const CorteReceiptCard = () => (
     <div className="bg-white text-forest-green font-sans flex flex-col border border-forest-green/20 p-5 h-full">
@@ -68,12 +73,14 @@ const CorteReceipt: React.FC<CorteReceiptProps> = ({ summary }) => {
 
       <div className="grid grid-cols-2 gap-3 mt-auto">
         <div className="text-center">
-          <div className="h-10 border-b border-forest-green mb-1"></div>
-          <p className="text-[7px] uppercase font-bold text-gray-400">Certifica</p>
+          <div className="h-10 border-b border-forest-green mb-2"></div>
+          <p className="text-[7px] uppercase font-bold text-forest-green mb-1">Firma</p>
+          <p className="text-[6px] uppercase font-semibold text-gray-400 tracking-tight">{auth1Name || '_______________'}</p>
         </div>
         <div className="text-center">
-          <div className="h-10 border-b border-forest-green mb-1"></div>
-          <p className="text-[7px] uppercase font-bold text-gray-400">Cuadre</p>
+          <div className="h-10 border-b border-forest-green mb-2"></div>
+          <p className="text-[7px] uppercase font-bold text-forest-green mb-1">Firma</p>
+          <p className="text-[6px] uppercase font-semibold text-gray-400 tracking-tight">{auth2Name || '_______________'}</p>
         </div>
       </div>
     </div>
@@ -89,6 +96,30 @@ const CorteReceipt: React.FC<CorteReceiptProps> = ({ summary }) => {
         <div className="w-px bg-gray-200"></div>
         <div className="flex-1">
           <CorteReceiptCard />
+        </div>
+      </div>
+
+      {/* Editor de autorizaciones solo visible en pantalla */}
+      <div className="hidden print:hidden fixed bottom-4 right-4 bg-white p-4 rounded-lg shadow-lg z-50 border border-forest-green space-y-3">
+        <div>
+          <label className="block text-forest-green text-xs font-bold mb-1">Autoriza 1:</label>
+          <input
+            type="text"
+            value={auth1Name}
+            onChange={(e) => setAuth1Name(e.target.value)}
+            placeholder="Nombre"
+            className="w-full border border-forest-green rounded px-2 py-1 text-xs"
+          />
+        </div>
+        <div>
+          <label className="block text-forest-green text-xs font-bold mb-1">Autoriza 2:</label>
+          <input
+            type="text"
+            value={auth2Name}
+            onChange={(e) => setAuth2Name(e.target.value)}
+            placeholder="Nombre"
+            className="w-full border border-forest-green rounded px-2 py-1 text-xs"
+          />
         </div>
       </div>
     </div>
