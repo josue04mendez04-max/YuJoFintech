@@ -301,6 +301,30 @@ export const listenToVaultCount = (
 // ============ CORTES DE CAJA ============
 
 /**
+ * Helper function to map Firestore document to CorteSummary
+ */
+const mapDocumentToCorteSummary = (doc: any): CorteSummary => {
+  const data = doc.data();
+  return {
+    id: doc.id,
+    date: data.date,
+    fechaInicio: data.fechaInicio,
+    fechaFin: data.fechaFin,
+    saldoInicial: Number(data.saldoInicial),
+    ingresosTotal: Number(data.ingresosTotal),
+    gastosTotal: Number(data.gastosTotal),
+    inversionesTotal: Number(data.inversionesTotal),
+    desinversionesTotal: Number(data.desinversionesTotal),
+    balanceSistema: Number(data.balanceSistema),
+    conteoFisico: Number(data.conteoFisico),
+    diferencia: Number(data.diferencia),
+    ajuste: data.ajuste !== undefined ? Number(data.ajuste) : undefined,
+    movements: data.movements || [],
+    timestamp: data.timestamp
+  };
+};
+
+/**
  * Save a corte summary to Firestore
  */
 export const saveCorte = async (corte: CorteSummary): Promise<void> => {
@@ -327,24 +351,7 @@ export const fetchCortes = async (): Promise<CorteSummary[]> => {
     
     const cortes: CorteSummary[] = [];
     querySnapshot.forEach((doc) => {
-      const data = doc.data();
-      cortes.push({
-        id: doc.id,
-        date: data.date,
-        fechaInicio: data.fechaInicio,
-        fechaFin: data.fechaFin,
-        saldoInicial: Number(data.saldoInicial),
-        ingresosTotal: Number(data.ingresosTotal),
-        gastosTotal: Number(data.gastosTotal),
-        inversionesTotal: Number(data.inversionesTotal),
-        desinversionesTotal: Number(data.desinversionesTotal),
-        balanceSistema: Number(data.balanceSistema),
-        conteoFisico: Number(data.conteoFisico),
-        diferencia: Number(data.diferencia),
-        ajuste: data.ajuste ? Number(data.ajuste) : undefined,
-        movements: data.movements || [],
-        timestamp: data.timestamp
-      });
+      cortes.push(mapDocumentToCorteSummary(doc));
     });
     
     return cortes;
@@ -368,24 +375,7 @@ export const getLastCorte = async (): Promise<CorteSummary | null> => {
     }
     
     const doc = querySnapshot.docs[0];
-    const data = doc.data();
-    return {
-      id: doc.id,
-      date: data.date,
-      fechaInicio: data.fechaInicio,
-      fechaFin: data.fechaFin,
-      saldoInicial: Number(data.saldoInicial),
-      ingresosTotal: Number(data.ingresosTotal),
-      gastosTotal: Number(data.gastosTotal),
-      inversionesTotal: Number(data.inversionesTotal),
-      desinversionesTotal: Number(data.desinversionesTotal),
-      balanceSistema: Number(data.balanceSistema),
-      conteoFisico: Number(data.conteoFisico),
-      diferencia: Number(data.diferencia),
-      ajuste: data.ajuste ? Number(data.ajuste) : undefined,
-      movements: data.movements || [],
-      timestamp: data.timestamp
-    };
+    return mapDocumentToCorteSummary(doc);
   } catch (error) {
     console.error('Error getting last corte from Firestore:', error);
     throw error;

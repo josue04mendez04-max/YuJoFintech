@@ -65,7 +65,7 @@ const CorteDeCaja: React.FC<CorteDeCajaProps> = ({ movements, physicalTotal, onC
           <p className="text-mustard/60 text-[8px] sm:text-[10px] uppercase font-bold mb-2 sm:mb-3">Saldo en Efectivo (Sistema)</p>
           <p className="text-white text-2xl sm:text-4xl font-serif font-bold italic">${balanceSistema.toLocaleString()}</p>
           <p className="text-white/30 text-[7px] sm:text-[9px] mt-2 italic">
-            Fórmula: {saldoInicial} + {totalIngresos} - {totalGastos} - {totalInversiones}
+            Fórmula: ${saldoInicial.toLocaleString()} + ${totalIngresos.toLocaleString()} - ${totalGastos.toLocaleString()} - ${totalInversiones.toLocaleString()}
           </p>
         </div>
 

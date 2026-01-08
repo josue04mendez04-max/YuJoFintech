@@ -163,21 +163,22 @@ const App: React.FC = () => {
     // Si hay diferencia, preguntar por el ajuste
     let ajuste: number | undefined = undefined;
     if (Math.abs(diferencia) >= 0.01) {
-      const ajusteStr = prompt(
-        `Se detectó una diferencia de $${diferencia.toFixed(2)}.\n\n` +
+      const confirmMsg = 
+        `⚠️ DIFERENCIA DETECTADA\n\n` +
         `Conteo Físico: $${physicalTotal.toFixed(2)}\n` +
-        `Balance Sistema: $${balanceSistema.toFixed(2)}\n\n` +
+        `Balance Sistema: $${balanceSistema.toFixed(2)}\n` +
+        `Diferencia: ${diferencia > 0 ? '+' : ''}$${diferencia.toFixed(2)} (${diferencia > 0 ? 'Sobrante' : 'Faltante'})\n\n` +
         `Para cuadrar la contabilidad, se debe crear un Asiento de Ajuste.\n` +
-        `¿Confirmas el ajuste de $${diferencia.toFixed(2)}? (Si/No)`,
-        'Si'
-      );
+        `¿Confirmas registrar este ajuste?\n\n` +
+        `Escribe "SI" para confirmar o "NO" para cancelar:`;
       
-      if (ajusteStr?.toLowerCase() === 'si' || ajusteStr?.toLowerCase() === 's') {
-        ajuste = diferencia;
-      } else {
-        alert('Corte cancelado. Por favor revisa el conteo físico o los movimientos.');
+      const ajusteResponse = prompt(confirmMsg, 'SI');
+      
+      if (!ajusteResponse || ajusteResponse.trim().toUpperCase() !== 'SI') {
+        alert('⛔ Corte cancelado.\nPor favor revisa el conteo físico o los movimientos antes de continuar.');
         return;
       }
+      ajuste = diferencia;
     }
     
     const summary: CorteSummary = {
