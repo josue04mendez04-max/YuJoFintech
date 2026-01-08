@@ -1,0 +1,90 @@
+/**
+ * 🔐 FIREBASE FIRESTORE SECURITY RULES
+ * 
+ * ⚡ INSTRUCCIONES RÁPIDAS:
+ * 1. Copia TODO el texto de abajo (desde rules_version hasta la última })
+ * 2. Ve a: https://console.firebase.google.com
+ * 3. Proyecto: easyrep-a1 → Firestore Database → Rules
+ * 4. Selecciona todo (Ctrl+A) y borra
+ * 5. Pega lo que copiaste (Ctrl+V)
+ * 6. Haz clic en PUBLISH
+ */
+
+// ============================================================
+// ✅ PARA DESARROLLO (Usa esto ahora)
+// ============================================================
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /yujofintech/{document=**} {
+      allow read, write: if true;
+    }
+  }
+}
+
+// ============================================================
+// EXPLICACIÓN
+// ============================================================
+//
+// allow read     → Permite leer cualquier documento
+// allow write    → Permite crear, actualizar y eliminar
+// if true        → Sin restricción (solo en desarrollo)
+//
+// Esto significa:
+// ✅ Lectura: Cualquiera
+// ✅ Escritura: Cualquiera
+// ⚠️ NO USAR EN PRODUCCIÓN
+//
+
+// ============================================================
+// ⭐ PARA PRODUCCIÓN (Usa después)
+// ============================================================
+/*
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /yujofintech/{document=**} {
+      allow read, write: if request.auth != null;
+    }
+  }
+}
+
+// request.auth != null = Usuario debe estar logeado
+
+*/
+
+// ============================================================
+// 🛡️ PARA MÁXIMA SEGURIDAD (Usa después)
+// ============================================================
+/*
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /yujofintech/{docId} {
+      // Solo lectura para usuarios autenticados
+      allow read: if request.auth != null;
+      
+      // Crear solo si válida estructura
+      allow create: if 
+        request.auth != null &&
+        request.resource.data.type in ['INGRESO', 'GASTO', 'INVERSION'] &&
+        request.resource.data.amount is number &&
+        request.resource.data.amount > 0 &&
+        request.resource.data.description is string &&
+        request.resource.data.status in ['PENDIENTE_CORTE', 'EN_CURSO', 'ARCHIVADO'];
+      
+      // Actualizar solo estado
+      allow update: if 
+        request.auth != null &&
+        request.resource.data.status in ['PENDIENTE_CORTE', 'EN_CURSO', 'ARCHIVADO'];
+      
+      // No permitir eliminación
+      allow delete: if false;
+    }
+  }
+}
+
+*/
