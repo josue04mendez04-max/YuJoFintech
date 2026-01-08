@@ -99,8 +99,28 @@ const Vault: React.FC<VaultProps> = ({ count, setCount }) => {
           </div>
         </div>
       </div>
-    </div>
-  );
-};
 
-export default Vault;
+      {/* TOTAL CONSOLIDADO EN TIEMPO REAL */}
+      <div className="sticky bottom-4 left-4 right-4 mx-auto glass rounded-lg sm:rounded-xl p-4 sm:p-6 shadow-lg border border-mustard/30 flex items-center justify-between gap-4 sm:gap-6 max-w-2xl w-full bg-gradient-to-r from-mustard/5 via-transparent to-mustard/5">
+         <div className="flex items-center gap-3 sm:gap-4 flex-1">
+            <div className="w-12 sm:w-14 h-12 sm:h-14 rounded-lg bg-mustard/10 flex items-center justify-center text-mustard border border-mustard/20 shadow-lg flex-shrink-0">
+                <span className="material-symbols-outlined text-2xl sm:text-3xl">savings</span>
+            </div>
+            <div className="min-w-0">
+               <p className="text-white/40 text-[8px] sm:text-[9px] uppercase font-bold tracking-[0.3em] truncate">Total en Caja</p>
+               <p className="text-mustard text-2xl sm:text-4xl font-serif font-bold italic truncate">
+                 ${total.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+               </p>
+            </div>
+         </div>
+         <button 
+           onClick={() => setCount({
+              bills: { '1000': 0, '500': 0, '200': 0, '100': 0, '50': 0, '20': 0 },
+              coins: { '10': 0, '5': 0, '2': 0, '1': 0, '0.5': 0 }
+           })} 
+           className="text-white/20 hover:text-red-400 transition-all p-2 hover:bg-red-400/10 rounded-lg flex-shrink-0"
+           title="Reiniciar conteo"
+         >
+            <span className="material-symbols-outlined text-xl sm:text-2xl">refresh</span>
+         </button>
+      </div>
