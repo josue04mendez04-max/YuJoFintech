@@ -35,9 +35,10 @@ const Dashboard: React.FC<DashboardProps> = ({ movements, inversiones, vault, on
   }, [movements, inversiones]);
 
   const physicalTotal = useMemo(() => {
+    if (!vault) return 0;
     let total = 0;
-    Object.entries(vault.bills).forEach(([denom, count]) => total += Number(denom) * (count || 0));
-    Object.entries(vault.coins).forEach(([denom, count]) => total += Number(denom) * (count || 0));
+    Object.entries(vault.bills || {}).forEach(([denom, count]) => total += Number(denom) * (count || 0));
+    Object.entries(vault.coins || {}).forEach(([denom, count]) => total += Number(denom) * (count || 0));
     return total;
   }, [vault]);
 
