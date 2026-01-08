@@ -99,31 +99,6 @@ const Vault: React.FC<VaultProps> = ({ count, setCount }) => {
           </div>
         </div>
       </div>
-
-      {/* TOTAL CONSOLIDADO */}
-      <div className="sticky bottom-4 left-4 right-4 mx-auto glass rounded-lg sm:rounded-xl p-3 sm:p-4 shadow-lg border border-white/10 flex items-center justify-between gap-3 sm:gap-6 max-w-2xl w-full">
-         <div className="flex items-center gap-2 sm:gap-4 flex-1">
-            <div className="w-10 sm:w-14 h-10 sm:h-14 rounded-lg bg-mustard/10 flex items-center justify-center text-mustard border border-mustard/20 shadow-lg flex-shrink-0">
-                <span className="material-symbols-outlined text-2xl sm:text-3xl">savings</span>
-            </div>
-            <div className="min-w-0">
-               <p className="text-white/40 text-[8px] sm:text-[9px] uppercase font-bold tracking-[0.3em] truncate">Total</p>
-               <p className="text-mustard text-lg sm:text-3xl font-serif font-bold italic truncate">
-                 ${total.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-               </p>
-            </div>
-         </div>
-         <button 
-           onClick={() => setCount({
-              bills: { '1000': 0, '500': 0, '200': 0, '100': 0, '50': 0, '20': 0 },
-              coins: { '10': 0, '5': 0, '2': 0, '1': 0, '0.5': 0 }
-           })} 
-           className="text-white/20 hover:text-red-400 transition-all p-2 hover:bg-red-400/10 rounded-lg flex-shrink-0"
-           title="Reiniciar"
-         >
-            <span className="material-symbols-outlined text-xl sm:text-2xl">refresh</span>
-         </button>
-      </div>
     </div>
   );
 };

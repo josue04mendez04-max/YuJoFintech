@@ -1,6 +1,6 @@
 
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
-import { Movement, MovementType, MovementStatus, VaultCount, CorteSummary, Inversion } from './types';
+import { Movement, MovementType, MovementStatus, VaultCount, CorteSummary } from './types';
 import Dashboard from './components/Dashboard';
 import Registry from './components/Registry';
 import Vault from './components/Vault';
@@ -9,7 +9,6 @@ import Sidebar from './components/Sidebar';
 import PinPad from './components/PinPad';
 import Receipt from './components/Receipt';
 import CorteReceipt from './components/CorteReceipt';
-import Accounting from './components/Accounting';
 import * as FirestoreService from './firestore.service';
 
 const App: React.FC = () => {
@@ -17,9 +16,6 @@ const App: React.FC = () => {
   
   // Estado de movimientos
   const [movements, setMovements] = useState<Movement[]>([]);
-  
-  // Estado de inversiones congeladas
-  const [inversiones, setInversiones] = useState<Inversion[]>([]);
   
   const [vault, setVault] = useState<VaultCount>({
     bills: { '1000': 0, '500': 0, '200': 0, '100': 0, '50': 0, '20': 0 },
@@ -256,10 +252,7 @@ const App: React.FC = () => {
             {view === 'dashboard' && (
               <Dashboard 
                 movements={movements}
-                inversiones={inversiones}
-                onOpenVault={() => setView('contabilidad')} 
-                onPerformCut={() => setView('corte')}
-                vault={vault}
+                inversiones={[]}
               />
             )}
             

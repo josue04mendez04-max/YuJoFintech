@@ -13,22 +13,24 @@ interface DashboardProps {
 
 const Dashboard: React.FC<DashboardProps> = ({ movements, inversiones, vault, onOpenVault, onPerformCut }) => {
   const stats = useMemo(() => {
-    // Balance del ciclo: Solo lo que no ha sido cortado y no es inversión
+    // Balance del ciclo: Solo lo que no ha sido cortado
     const activeCycle = movements.filter(m => m.status === MovementStatus.PENDIENTE_CORTE);
     const ingresos = activeCycle.filter(m => m.type === MovementType.INGRESO).reduce((a, b) => a + b.amount, 0);
     const gastos = activeCycle.filter(m => m.type === MovementType.GASTO).reduce((a, b) => a + b.amount, 0);
     
-    // Inversiones: Todo lo que esté "EN_CURSO" independientemente del corte
-    const inversionesLegacy = movements.filter(m => m.status === MovementStatus.EN_CURSO).reduce((a, b) => a + b.amount, 0);
+    // Inversiones CONGELADAS: dinero que salió pero volverá (status EN_CURSO en movements)
+    // IMPORTANTE: Estas se restan del balance porque ya salieron de caja
+    const inversionesCongeladas = movements
+      .filter(m => m.status === MovementStatus.EN_CURSO)
+      .reduce((a, b) => a + b.amount, 0);
     
-    // Inversiones congeladas: dinero que salió pero volverá
-    const inversionesCongeladas = inversiones.filter(i => i.status === 'ACTIVA' || i.status === 'PENDIENTE_RETORNO').reduce((a, b) => a + b.monto, 0);
+    // Balance real disponible = (Ingresos - Gastos) - Inversiones Congeladas
+    // Porque las inversiones ya salieron de la caja pero vuelven después
+    const balanceDisponible = ingresos - gastos - inversionesCongeladas;
     
     return { 
-      balance: ingresos - gastos, 
-      inversionesLegacy,
-      inversionesCongeladas,
-      totalInversiones: inversionesLegacy + inversionesCongeladas
+      balance: balanceDisponible,  // Este es el que sale en el dashboard
+      inversionesCongeladas
     };
   }, [movements, inversiones]);
 
@@ -80,7 +82,7 @@ const Dashboard: React.FC<DashboardProps> = ({ movements, inversiones, vault, on
       <div className="flex flex-col gap-4 sm:gap-6 md:gap-8">
         <div className="glass rounded-xl sm:rounded-2xl md:rounded-[32px] p-5 sm:p-8 md:p-10 text-white shadow-glass-panel flex-1 border-t border-white/20">
           <p className="text-white/40 font-bold uppercase tracking-[0.4em] text-[8px] sm:text-[9px] md:text-[10px] mb-2 sm:mb-3">Inversiones Activas</p>
-          <h3 className="text-2xl sm:text-3xl md:text-5xl font-serif font-bold italic mb-4 sm:mb-8 text-mustard tracking-tight">${stats.totalInversiones.toLocaleString()}</h3>
+          <h3 className="text-2xl sm:text-3xl md:text-5xl font-serif font-bold italic mb-4 sm:mb-8 text-mustard tracking-tight">${stats.inversionesCongeladas.toLocaleString()}</h3>
           <div className="space-y-3 sm:space-y-5 pt-3 sm:pt-6 border-t border-white/10 text-[8px] sm:text-[10px] uppercase tracking-[0.3em] font-bold opacity-50">
              <div className="flex justify-between items-center">
                 <span>Riesgo</span>
@@ -101,29 +103,6 @@ const Dashboard: React.FC<DashboardProps> = ({ movements, inversiones, vault, on
           <span className="hidden sm:inline">Ejecutar Corte</span>
           <span className="sm:hidden">Corte</span>
         </button>
-
-        {/* Dinero Congelado (Inversiones) - Con efecto de hielo */}
-        {stats.inversionesCongeladas > 0 && (
-          <div className="rounded-xl sm:rounded-2xl md:rounded-[32px] p-5 sm:p-8 md:p-10 text-white shadow-glass-panel flex-1 border border-cyan-400/30 relative overflow-hidden bg-gradient-to-br from-cyan-500/10 via-transparent to-blue-500/10 backdrop-blur-sm">
-            {/* Efecto de hielo animado */}
-            <div className="absolute inset-0 opacity-20 pointer-events-none">
-              <div className="absolute top-2 left-4 w-2 h-2 bg-cyan-300 rounded-full blur-sm animate-pulse"></div>
-              <div className="absolute top-1/3 right-6 w-3 h-3 bg-blue-300 rounded-full blur-sm animate-pulse delay-700"></div>
-              <div className="absolute bottom-4 left-1/4 w-2 h-2 bg-cyan-200 rounded-full blur-sm animate-pulse delay-1000"></div>
-            </div>
-            
-            <div className="relative z-10">
-              <p className="text-cyan-300 font-bold uppercase tracking-[0.4em] text-[8px] sm:text-[9px] md:text-[10px] mb-2 sm:mb-3 flex items-center gap-2">
-                <span className="material-symbols-outlined text-lg">ac_unit</span>
-                Dinero Congelado
-              </p>
-              <h3 className="text-2xl sm:text-3xl md:text-4xl font-serif font-bold italic mb-2 sm:mb-4 text-cyan-200 tracking-tight">${stats.inversionesCongeladas.toLocaleString()}</h3>
-              <p className="text-cyan-300/70 text-[8px] sm:text-[9px] font-medium leading-relaxed">
-                Dinero invertido que volverá • No cuenta en el balance actual
-              </p>
-            </div>
-          </div>
-        )}
       </div>
 
       {/* Barra de Cuadre */}
