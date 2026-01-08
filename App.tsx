@@ -271,14 +271,7 @@ const App: React.FC = () => {
             )}
 
             {view === 'contabilidad' && (
-              <>
-                <Vault count={vault} setCount={setVault} />
-                <div className="mt-8 md:mt-12">
-                  <Accounting 
-                    onInversionChange={(inv) => setInversiones(inv)}
-                  />
-                </div>
-              </>
+              <Vault count={vault} setCount={setVault} />
             )}
 
             {view === 'corte' && (
