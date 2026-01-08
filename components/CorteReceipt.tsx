@@ -87,38 +87,38 @@ const CorteReceipt: React.FC<CorteReceiptProps> = ({ summary }) => {
   );
 
   return (
-    <div className="bg-white w-[1122px] h-[792px] flex flex-col p-6 gap-6 mx-auto">
+    <div className="bg-white w-[1122px] max-w-full h-auto sm:h-[792px] flex flex-col p-3 sm:p-6 gap-4 sm:gap-6 mx-auto overflow-y-auto sm:overflow-visible">
       {/* Dos recibos de corte en horizontal */}
-      <div className="flex gap-6 h-full">
-        <div className="flex-1">
+      <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 h-auto sm:h-full">
+        <div className="flex-1 min-h-[500px] sm:min-h-0">
           <CorteReceiptCard />
         </div>
-        <div className="w-px bg-gray-200"></div>
-        <div className="flex-1">
+        <div className="w-px bg-gray-200 hidden sm:block"></div>
+        <div className="flex-1 min-h-[500px] sm:min-h-0 hidden sm:block">
           <CorteReceiptCard />
         </div>
       </div>
 
       {/* Editor de autorizaciones solo visible en pantalla */}
-      <div className="hidden print:hidden fixed bottom-4 right-4 bg-white p-4 rounded-lg shadow-lg z-50 border border-forest-green space-y-3">
+      <div className="hidden print:hidden fixed bottom-4 right-4 bg-white p-3 sm:p-4 rounded-lg shadow-lg z-50 border border-forest-green space-y-2 sm:space-y-3 text-xs sm:text-sm">
         <div>
-          <label className="block text-forest-green text-xs font-bold mb-1">Autoriza 1:</label>
+          <label className="block text-forest-green text-[10px] sm:text-xs font-bold mb-1 sm:mb-2">Autoriza 1:</label>
           <input
             type="text"
             value={auth1Name}
             onChange={(e) => setAuth1Name(e.target.value)}
             placeholder="Nombre"
-            className="w-full border border-forest-green rounded px-2 py-1 text-xs"
+            className="w-full border border-forest-green rounded px-2 sm:px-3 py-1 sm:py-2 text-xs sm:text-sm"
           />
         </div>
         <div>
-          <label className="block text-forest-green text-xs font-bold mb-1">Autoriza 2:</label>
+          <label className="block text-forest-green text-[10px] sm:text-xs font-bold mb-1 sm:mb-2">Autoriza 2:</label>
           <input
             type="text"
             value={auth2Name}
             onChange={(e) => setAuth2Name(e.target.value)}
             placeholder="Nombre"
-            className="w-full border border-forest-green rounded px-2 py-1 text-xs"
+            className="w-full border border-forest-green rounded px-2 sm:px-3 py-1 sm:py-2 text-xs sm:text-sm"
           />
         </div>
       </div>

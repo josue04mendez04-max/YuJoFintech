@@ -74,26 +74,26 @@ const Receipt: React.FC<ReceiptProps> = ({ movement }) => {
   );
 
   return (
-    <div className="bg-white w-[1122px] h-[792px] flex flex-col p-6 gap-6 mx-auto">
-      {/* Dos recibos en horizontal */}
-      <div className="flex gap-6 h-full">
-        <div className="flex-1">
+    <div className="bg-white w-[1122px] max-w-full h-auto sm:h-[792px] flex flex-col p-3 sm:p-6 gap-4 sm:gap-6 mx-auto overflow-y-auto sm:overflow-visible">
+      {/* Dos recibos en horizontal - responsive */}
+      <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 h-auto sm:h-full">
+        <div className="flex-1 min-h-[500px] sm:min-h-0">
           <ReceiptCard />
         </div>
-        <div className="w-px bg-gray-200"></div>
-        <div className="flex-1">
+        <div className="w-px bg-gray-200 hidden sm:block"></div>
+        <div className="flex-1 min-h-[500px] sm:min-h-0 hidden sm:block">
           <ReceiptCard />
         </div>
       </div>
       
       {/* Editor de autorización solo visible en pantalla */}
-      <div className="hidden print:hidden fixed bottom-4 right-4 bg-white p-4 rounded-lg shadow-lg z-50 border border-forest-green">
-        <label className="block text-forest-green text-sm font-bold mb-2">Editar nombre de autorización:</label>
+      <div className="hidden print:hidden fixed bottom-4 right-4 bg-white p-3 sm:p-4 rounded-lg shadow-lg z-50 border border-forest-green text-xs sm:text-sm">
+        <label className="block text-forest-green text-[10px] sm:text-sm font-bold mb-2">Autorización:</label>
         <input
           type="text"
           value={authName}
           onChange={(e) => setAuthName(e.target.value)}
-          className="w-full border border-forest-green rounded px-3 py-2 text-sm"
+          className="w-full border border-forest-green rounded px-2 sm:px-3 py-1 sm:py-2 text-xs sm:text-sm"
         />
       </div>
     </div>

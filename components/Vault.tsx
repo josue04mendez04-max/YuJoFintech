@@ -30,37 +30,37 @@ const Vault: React.FC<VaultProps> = ({ count, setCount }) => {
   }, [count]);
 
   return (
-    <div className="flex flex-col gap-10 max-w-6xl mx-auto">
-      <div className="glass rounded-[24px] p-6 text-center shadow-glass-panel">
-        <p className="text-mustard font-bold text-[10px] uppercase tracking-[0.5em]">
-          Contabilidad de Divisas • Conteo Físico
+    <div className="flex flex-col gap-4 sm:gap-6 max-w-full lg:max-w-6xl mx-auto px-2 sm:px-4">
+      <div className="glass rounded-lg sm:rounded-xl p-3 sm:p-4 text-center shadow-glass-panel">
+        <p className="text-mustard font-bold text-[8px] sm:text-[9px] uppercase tracking-[0.4em]">
+          Contabilidad • Conteo Físico
         </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
         {/* Papel Moneda */}
-        <div className="glass rounded-[24px] p-10 shadow-glass-panel">
-          <div className="flex justify-between items-center mb-10 border-b border-white/10 pb-6">
-            <h3 className="text-2xl font-serif italic text-white font-bold tracking-tight">Papel Moneda</h3>
-            <span className="material-symbols-outlined text-mustard text-3xl">payments</span>
+        <div className="glass rounded-lg sm:rounded-xl p-4 sm:p-5 shadow-glass-panel">
+          <div className="flex justify-between items-center mb-4 sm:mb-5 border-b border-white/10 pb-2 sm:pb-3">
+            <h3 className="text-base sm:text-lg font-serif italic text-white font-bold">Papel Moneda</h3>
+            <span className="material-symbols-outlined text-mustard text-lg sm:text-xl">payments</span>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
             {Object.entries(count.bills).sort((a,b) => Number(b[0]) - Number(a[0])).map(([denom, val]) => (
-              <div key={denom} className="bg-black/20 rounded-2xl p-6 border border-white/5 hover:border-mustard/40 transition-all group">
-                <div className="flex justify-between items-start mb-6">
-                  <span className="text-3xl font-serif font-bold italic text-white tracking-tighter">${denom}</span>
-                  <span className="text-mustard font-mono text-[11px] font-bold bg-mustard/10 px-2 py-1 rounded-lg">${(Number(denom) * (val || 0)).toLocaleString()}</span>
+              <div key={denom} className="bg-black/30 rounded-lg p-2 sm:p-3 border border-white/5 hover:border-mustard/40 transition-all">
+                <div className="text-center mb-2">
+                  <p className="text-base sm:text-lg font-serif font-bold italic text-white">${denom}</p>
+                  <p className="text-mustard font-mono text-[8px] sm:text-[10px] font-bold">${(Number(denom) * (val || 0)).toLocaleString()}</p>
                 </div>
-                <div className="flex items-center gap-3">
-                  <button onClick={() => updateBill(denom, (val || 0) - 1)} className="w-10 h-10 rounded-xl bg-white/5 text-white hover:bg-mustard hover:text-forest-green font-bold text-xl transition-all">-</button>
+                <div className="flex items-center gap-1 justify-center">
+                  <button onClick={() => updateBill(denom, (val || 0) - 1)} className="w-6 sm:w-7 h-6 sm:h-7 rounded-md bg-white/5 text-white hover:bg-mustard hover:text-forest-green font-bold text-sm transition-all">-</button>
                   <input 
                     type="number" 
                     value={val || ''} 
                     onChange={(e) => updateBill(denom, parseInt(e.target.value) || 0)} 
                     placeholder="0"
-                    className="flex-1 bg-black/40 rounded-xl py-2 text-center text-white font-bold text-lg focus:outline-none border border-white/10 focus:border-mustard"
+                    className="w-10 sm:w-12 bg-black/40 rounded-md py-1 text-center text-white font-bold text-sm focus:outline-none border border-white/10 focus:border-mustard"
                   />
-                  <button onClick={() => updateBill(denom, (val || 0) + 1)} className="w-10 h-10 rounded-xl bg-white/5 text-white hover:bg-mustard hover:text-forest-green font-bold text-xl transition-all">+</button>
+                  <button onClick={() => updateBill(denom, (val || 0) + 1)} className="w-6 sm:w-7 h-6 sm:h-7 rounded-md bg-white/5 text-white hover:bg-mustard hover:text-forest-green font-bold text-sm transition-all">+</button>
                 </div>
               </div>
             ))}
@@ -68,30 +68,30 @@ const Vault: React.FC<VaultProps> = ({ count, setCount }) => {
         </div>
 
         {/* Metálico */}
-        <div className="glass rounded-[24px] p-10 shadow-glass-panel">
-          <div className="flex justify-between items-center mb-10 border-b border-white/10 pb-6">
-            <h3 className="text-2xl font-serif italic text-white font-bold tracking-tight">Especies Metálicas</h3>
-            <span className="material-symbols-outlined text-mustard text-3xl">monetization_on</span>
+        <div className="glass rounded-lg sm:rounded-xl p-4 sm:p-5 shadow-glass-panel">
+          <div className="flex justify-between items-center mb-4 sm:mb-5 border-b border-white/10 pb-2 sm:pb-3">
+            <h3 className="text-base sm:text-lg font-serif italic text-white font-bold">Metálico</h3>
+            <span className="material-symbols-outlined text-mustard text-lg sm:text-xl">monetization_on</span>
           </div>
-          <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-2">
              {Object.entries(count.coins).sort((a,b) => Number(b[0]) - Number(a[0])).map(([denom, val]) => (
-               <div key={denom} className="bg-black/20 rounded-2xl p-4 flex items-center justify-between border border-white/5 group hover:border-mustard/40 transition-all">
-                  <div className="flex items-center gap-6">
-                     <div className="w-14 h-14 rounded-full border-2 border-mustard/30 flex items-center justify-center text-mustard text-lg font-bold italic shadow-xl bg-mustard/5">
+               <div key={denom} className="bg-black/30 rounded-lg p-2 sm:p-3 flex items-center justify-between border border-white/5 hover:border-mustard/40 transition-all">
+                  <div className="flex items-center gap-2 sm:gap-3 flex-1">
+                     <div className="w-8 sm:w-10 h-8 sm:h-10 rounded-full border border-mustard/30 flex items-center justify-center text-mustard text-xs sm:text-sm font-bold italic bg-mustard/5">
                         ${denom}
                      </div>
-                     <div>
-                        <p className="text-white/40 text-[10px] uppercase font-bold tracking-[0.2em]">Subtotal</p>
-                        <p className="text-white font-serif italic text-xl font-bold">${(Number(denom) * (val || 0)).toLocaleString()}</p>
+                     <div className="flex-1 min-w-0">
+                        <p className="text-white/40 text-[8px] uppercase font-bold">Subtotal</p>
+                        <p className="text-white font-serif italic text-xs sm:text-sm font-bold">${(Number(denom) * (val || 0)).toLocaleString()}</p>
                      </div>
                   </div>
-                  <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-1 ml-2">
                     <input 
                         type="number" 
                         value={val || ''} 
                         onChange={(e) => updateCoin(denom, parseInt(e.target.value) || 0)} 
                         placeholder="0"
-                        className="w-24 bg-black/40 rounded-xl text-center text-white p-3 font-bold text-xl focus:outline-none border border-white/10 focus:border-mustard" 
+                        className="w-12 sm:w-14 bg-black/40 rounded-md text-center text-white p-1 font-bold text-sm focus:outline-none border border-white/10 focus:border-mustard" 
                     />
                   </div>
                </div>
@@ -100,15 +100,17 @@ const Vault: React.FC<VaultProps> = ({ count, setCount }) => {
         </div>
       </div>
 
-      {/* GIANT MUSTARD COUNTER */}
-      <div className="sticky bottom-6 mx-auto glass rounded-[32px] p-12 shadow-[0_30px_70px_rgba(0,0,0,0.6)] border-t border-white/30 flex items-center justify-between gap-16 max-w-4xl w-full">
-         <div className="flex items-center gap-12">
-            <div className="w-24 h-24 rounded-[28px] bg-mustard/10 flex items-center justify-center text-mustard border border-mustard/20 shadow-lg animate-pulse">
-                <span className="material-symbols-outlined text-6xl">savings</span>
+      {/* TOTAL CONSOLIDADO */}
+      <div className="sticky bottom-4 left-4 right-4 mx-auto glass rounded-lg sm:rounded-xl p-3 sm:p-4 shadow-lg border border-white/10 flex items-center justify-between gap-3 sm:gap-6 max-w-2xl w-full">
+         <div className="flex items-center gap-2 sm:gap-4 flex-1">
+            <div className="w-10 sm:w-14 h-10 sm:h-14 rounded-lg bg-mustard/10 flex items-center justify-center text-mustard border border-mustard/20 shadow-lg flex-shrink-0">
+                <span className="material-symbols-outlined text-2xl sm:text-3xl">savings</span>
             </div>
-            <div>
-               <p className="text-white/40 text-[11px] uppercase font-bold tracking-[0.6em] mb-1">Total Consolidado en Bóveda</p>
-               <p className="text-mustard text-7xl font-serif font-bold italic tracking-tighter mustard-glow">${total.toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
+            <div className="min-w-0">
+               <p className="text-white/40 text-[8px] sm:text-[9px] uppercase font-bold tracking-[0.3em] truncate">Total</p>
+               <p className="text-mustard text-lg sm:text-3xl font-serif font-bold italic truncate">
+                 ${total.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+               </p>
             </div>
          </div>
          <button 
@@ -116,10 +118,10 @@ const Vault: React.FC<VaultProps> = ({ count, setCount }) => {
               bills: { '1000': 0, '500': 0, '200': 0, '100': 0, '50': 0, '20': 0 },
               coins: { '10': 0, '5': 0, '2': 0, '1': 0, '0.5': 0 }
            })} 
-           className="text-white/20 hover:text-red-400 transition-all p-4 hover:bg-red-400/10 rounded-2xl"
-           title="Reiniciar Conteo"
+           className="text-white/20 hover:text-red-400 transition-all p-2 hover:bg-red-400/10 rounded-lg flex-shrink-0"
+           title="Reiniciar"
          >
-            <span className="material-symbols-outlined text-5xl">refresh</span>
+            <span className="material-symbols-outlined text-xl sm:text-2xl">refresh</span>
          </button>
       </div>
     </div>
