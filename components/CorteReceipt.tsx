@@ -32,32 +32,74 @@ const CorteReceipt: React.FC<CorteReceiptProps> = ({ summary }) => {
       </div>
 
       <div className="grid grid-cols-3 gap-2 mb-3 text-[7px]">
-         <div className="p-2 bg-gray-50 rounded text-center">
-            <p className="uppercase font-bold text-gray-400 mb-1">Ingresos</p>
+         <div className="p-2 bg-green-50 rounded text-center">
+            <p className="uppercase font-bold text-green-600 mb-1">Ingresos</p>
             <p className="text-xs font-serif italic text-green-700 font-bold">${summary.ingresosTotal.toLocaleString()}</p>
          </div>
-         <div className="p-2 bg-gray-50 rounded text-center">
-            <p className="uppercase font-bold text-gray-400 mb-1">Egresos</p>
-            <p className="text-xs font-serif italic text-red-700 font-bold">-${summary.gastosTotal.toLocaleString()}</p>
+         <div className="p-2 bg-red-50 rounded text-center">
+            <p className="uppercase font-bold text-red-600 mb-1">Egresos</p>
+            <p className="text-xs font-serif italic text-red-700 font-bold">-${summary.egresosTotal.toLocaleString()}</p>
          </div>
-         <div className="p-2 bg-forest-green text-white rounded text-center">
-            <p className="uppercase font-bold opacity-60 mb-1">Balance</p>
-            <p className="text-xs font-serif italic font-bold">${summary.balanceSistema.toLocaleString()}</p>
+         <div className="p-2 bg-amber-50 rounded text-center">
+            <p className="uppercase font-bold text-amber-600 mb-1">Inversiones</p>
+            <p className="text-xs font-serif italic text-amber-700 font-bold">-${summary.inversionesRealizadas.toLocaleString()}</p>
          </div>
       </div>
 
-      <div className="border border-forest-green p-2 rounded mb-3 flex justify-between items-center bg-gray-50 text-[7px]">
-         <div>
-            <p className="uppercase font-bold text-gray-400 mb-1">Conteo</p>
-            <p className="text-lg font-serif font-bold italic">${summary.conteoFisico.toLocaleString()}</p>
+      <div className="border-2 border-forest-green p-3 rounded mb-3 bg-forest-green/5 text-[7px]">
+         <div className="grid grid-cols-2 gap-2 mb-2">
+            <div>
+               <p className="uppercase font-bold text-gray-400 mb-1">Balance Calculado</p>
+               <p className="text-lg font-serif font-bold italic">${summary.balanceCalculado.toLocaleString()}</p>
+            </div>
+            <div className="text-right">
+               <p className="uppercase font-bold text-gray-400 mb-1">Conteo Físico</p>
+               <p className="text-lg font-serif font-bold italic">${summary.conteoFisico.toLocaleString()}</p>
+            </div>
          </div>
-         <div className="text-right">
-            <p className="uppercase font-bold text-gray-400 mb-1">Diferencia</p>
-            <p className={`text-base font-mono font-bold ${Math.abs(summary.diferencia) < 0.01 ? 'text-green-600' : 'text-red-600'}`}>
-               ${summary.diferencia.toLocaleString()}
+         <div className="border-t-2 border-forest-green pt-2">
+            <p className={`text-center font-bold text-xs ${Math.abs(summary.diferencia) < 0.01 ? 'text-green-600' : 'text-red-600'}`}>
+               {Math.abs(summary.diferencia) < 0.01 ? '✓ CUADRE' : '⚠ DIFERENCIA'}: ${summary.diferencia.toLocaleString()}
             </p>
          </div>
       </div>
+
+      {/* Patrimonio */}
+      <div className="bg-gray-50 border border-gray-200 p-2 rounded mb-3 text-[7px]">
+         <p className="uppercase font-bold text-gray-600 mb-2 border-b border-gray-200 pb-1">Posición de Activos</p>
+         <div className="grid grid-cols-3 gap-1 text-[6px]">
+            <div>
+               <span className="text-gray-500">Efectivo:</span>
+               <p className="font-bold">${summary.patrimonio.efectivoDisponible.toLocaleString()}</p>
+            </div>
+            <div>
+               <span className="text-gray-500">Inversiones:</span>
+               <p className="font-bold">${summary.patrimonio.inversionesActivas.toLocaleString()}</p>
+            </div>
+            <div>
+               <span className="text-gray-500 font-bold">Capital Total:</span>
+               <p className="font-bold text-forest-green">${summary.patrimonio.capitalTotal.toLocaleString()}</p>
+            </div>
+         </div>
+      </div>
+
+      {/* Ajuste si existe */}
+      {summary.ajuste && (
+         <div className={`border-2 p-2 rounded mb-3 text-[7px] ${
+            summary.ajuste.tipo === 'SOBRANTE' 
+               ? 'border-yellow-500 bg-yellow-50' 
+               : 'border-red-500 bg-red-50'
+         }`}>
+            <p className={`font-bold uppercase ${
+               summary.ajuste.tipo === 'SOBRANTE' 
+                  ? 'text-yellow-700' 
+                  : 'text-red-700'
+            }`}>
+               {summary.ajuste.tipo}: ${summary.ajuste.monto.toLocaleString()}
+            </p>
+            <p className="text-gray-600 mt-1">{summary.ajuste.descripcion}</p>
+         </div>
+      )}
 
       <div className="mb-3 flex-1">
          <p className="text-[7px] uppercase font-bold text-gray-400 mb-2 border-b border-gray-100 pb-1">Folios ({summary.movements.length})</p>

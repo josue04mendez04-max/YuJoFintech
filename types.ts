@@ -51,10 +51,36 @@ export interface VaultCount {
 export interface CorteSummary {
   id: string;
   date: string;
+  // Saldos iniciales
+  saldoInicial: number;
+  
+  // Flujo de efectivo
   ingresosTotal: number;
-  gastosTotal: number;
-  balanceSistema: number;
+  egresosTotal: number;
+  inversionesRealizadas: number;
+  desinversionesRetornadas: number;
+  
+  // Cálculos derivados
+  balanceCalculado: number; // Saldo_Inicial + Ingresos - Egresos - Inversiones + Desinversiones
   conteoFisico: number;
-  diferencia: number;
+  diferencia: number; // conteoFisico - balanceCalculado
+  
+  // Patrimonio
+  patrimonio: {
+    efectivoDisponible: number; // balanceCalculado
+    inversionesActivas: number; // Total en inversiones activas
+    capitalTotal: number; // efectivo + inversiones
+  };
+  
+  // Datos de auditoría
+  gastosTotal?: number; // Para compatibilidad
+  balanceSistema?: number; // Para compatibilidad
   movements: Movement[];
+  
+  // Ajustes si es necesario
+  ajuste?: {
+    tipo: 'SOBRANTE' | 'FALTANTE';
+    monto: number;
+    descripcion: string;
+  };
 }

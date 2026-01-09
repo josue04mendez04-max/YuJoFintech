@@ -5,14 +5,17 @@ import Dashboard from './components/Dashboard';
 import Registry from './components/Registry';
 import Vault from './components/Vault';
 import CorteDeCaja from './components/CorteDeCaja';
+import CortHistory from './components/CortHistory';
+import CortDetailModal from './components/CortDetailModal';
 import Sidebar from './components/Sidebar';
 import PinPad from './components/PinPad';
 import Receipt from './components/Receipt';
 import CorteReceipt from './components/CorteReceipt';
 import * as FirestoreService from './firestore.service';
+import * as ConciliacionService from './conciliacion.service';
 
 const App: React.FC = () => {
-  const [view, setView] = useState<'dashboard' | 'notaria' | 'contabilidad' | 'corte'>('dashboard');
+  const [view, setView] = useState<'dashboard' | 'notaria' | 'contabilidad' | 'corte' | 'historialCortes'>('dashboard');
   
   // Estado de movimientos
   const [movements, setMovements] = useState<Movement[]>([]);
@@ -27,6 +30,7 @@ const App: React.FC = () => {
   const [securityMsg, setSecurityMsg] = useState('');
   const [selectedMovementForPrint, setSelectedMovementForPrint] = useState<Movement | null>(null);
   const [selectedCorteForPrint, setSelectedCorteForPrint] = useState<CorteSummary | null>(null);
+  const [selectedCortDetail, setSelectedCortDetail] = useState<{ cutId: string; isOpen: boolean }>({ cutId: '', isOpen: false });
   
   // Estados de Sincronización
   const [isLoading, setIsLoading] = useState(true);
@@ -140,46 +144,47 @@ const App: React.FC = () => {
   };
 
   const performCorte = () => {
-    const active = movements.filter(m => m.status === MovementStatus.PENDIENTE_CORTE);
-    const ingresos = active.filter(m => m.type === MovementType.INGRESO).reduce((a, b) => a + b.amount, 0);
-    const gastos = active.filter(m => m.type === MovementType.GASTO).reduce((a, b) => a + b.amount, 0);
-    
-    const summary: CorteSummary = {
-      id: `CORTE-${Date.now().toString().slice(-6)}`,
-      date: new Date().toLocaleDateString(),
-      ingresosTotal: ingresos,
-      gastosTotal: gastos,
-      balanceSistema: ingresos - gastos,
-      conteoFisico: physicalTotal,
-      diferencia: physicalTotal - (ingresos - gastos),
-      movements: active
-    };
-
-    handleSecurityAction("Josué, ¿confirmas el cierre definitivo de este ciclo?", async () => {
-      setSelectedCorteForPrint(summary);
-      
-      const idsToArchive = active.map(m => m.id);
-
-      // Actualizamos localmente
-      setMovements(prev => prev.map(m => 
-        idsToArchive.includes(m.id) 
-           ? { ...m, status: MovementStatus.ARCHIVADO, cutId: summary.id } 
-           : m
-      ));
-      
-      // Enviamos a Firebase Firestore
-      try {
-        await FirestoreService.performCorte(idsToArchive, summary.id);
-      } catch (err) { 
-        console.error("Error al registrar corte en Firebase", err);
-      }
-
-      setTimeout(() => {
-        window.print();
-        setSelectedCorteForPrint(null);
-        setView('dashboard');
-      }, 500);
+    // Usar el servicio de conciliación para cálculos más robustos
+    const conciliacion = ConciliacionService.calcularConciliacion({
+      movements,
+      inversiones: [], // Se obtendría del estado real en una app completa
+      physicalTotal,
+      saldoInicial: 0 // Podría venir de un estado persistido
     });
+
+    const validacion = ConciliacionService.validarCorte(conciliacion);
+    const summary = ConciliacionService.generarCorteSummary(conciliacion, validacion);
+
+    handleSecurityAction(
+      validacion.isBalanced 
+        ? "Josué, ¿confirmas el cierre definitivo de este ciclo?" 
+        : `⚠ AJUSTE REQUERIDO: ${validacion.mensaje}\n\n¿Deseas proceder de todas formas?`,
+      async () => {
+        setSelectedCorteForPrint(summary);
+        
+        const idsToArchive = conciliacion.activeMovements.map(m => m.id);
+
+        // Actualizamos localmente
+        setMovements(prev => prev.map(m => 
+          idsToArchive.includes(m.id) 
+             ? { ...m, status: MovementStatus.ARCHIVADO, cutId: summary.id } 
+             : m
+        ));
+        
+        // Enviamos a Firebase Firestore
+        try {
+          await FirestoreService.performCorte(idsToArchive, summary.id);
+        } catch (err) { 
+          console.error("Error al registrar corte en Firebase", err);
+        }
+
+        setTimeout(() => {
+          window.print();
+          setSelectedCorteForPrint(null);
+          setView('dashboard');
+        }, 500);
+      }
+    );
   };
 
   return (
@@ -210,6 +215,7 @@ const App: React.FC = () => {
                 {view === 'notaria' && 'La Notaría'}
                 {view === 'contabilidad' && 'La Bóveda'}
                 {view === 'corte' && 'Corte de Caja'}
+                {view === 'historialCortes' && 'Historial de Cortes'}
               </h1>
               <p className="text-forest-green/70 text-xs sm:text-sm font-medium italic max-w-lg">
                 "Hola Josué. {syncStatus === 'error' ? 'Modo local activo.' : 'Tu patrimonio está sincronizado.'}"
@@ -281,6 +287,15 @@ const App: React.FC = () => {
                 onConfirmCorte={performCorte}
               />
             )}
+
+            {view === 'historialCortes' && (
+              <CortHistory 
+                movements={movements}
+                onViewDetails={(cutId) => {
+                  setSelectedCortDetail({ cutId, isOpen: true });
+                }}
+              />
+            )}
           </>
         )}
       </main>
@@ -292,6 +307,17 @@ const App: React.FC = () => {
           onClose={() => setShowPinPad(false)} 
         />
       )}
+
+      <CortDetailModal
+        cutId={selectedCortDetail.cutId}
+        movements={movements.filter(m => m.cutId === selectedCortDetail.cutId)}
+        isOpen={selectedCortDetail.isOpen}
+        onClose={() => setSelectedCortDetail({ ...selectedCortDetail, isOpen: false })}
+        onPrint={() => {
+          window.print();
+          setSelectedCortDetail({ ...selectedCortDetail, isOpen: false });
+        }}
+      />
 
       <div className="print-only fixed inset-0 z-[9999] bg-white">
         {selectedMovementForPrint && <Receipt movement={selectedMovementForPrint} />}

@@ -2,8 +2,8 @@
 import React, { useState } from 'react';
 
 interface SidebarProps {
-  currentView: 'dashboard' | 'notaria' | 'contabilidad' | 'corte';
-  setView: (view: 'dashboard' | 'notaria' | 'contabilidad' | 'corte') => void;
+  currentView: 'dashboard' | 'notaria' | 'contabilidad' | 'corte' | 'historialCortes';
+  setView: (view: 'dashboard' | 'notaria' | 'contabilidad' | 'corte' | 'historialCortes') => void;
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ currentView, setView }) => {
@@ -14,6 +14,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, setView }) => {
     { id: 'notaria', label: 'La Notaría', icon: 'edit_document' },
     { id: 'contabilidad', label: 'Contabilidad', icon: 'calculate' },
     { id: 'corte', label: 'Corte de Caja', icon: 'receipt_long' },
+    { id: 'historialCortes', label: 'Historial de Cortes', icon: 'history' },
   ];
 
   const handleNavClick = (id: string) => {
