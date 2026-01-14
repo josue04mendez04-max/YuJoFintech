@@ -20,18 +20,25 @@ Este documento describe el sistema implementado para manejar correctamente las i
 
 ### 1. Tipos de Datos (types.ts)
 
-La interfaz `Inversion` ahora incluye campos para controlar el ciclo de vida completo:
+La interfaz `Inversion` ahora incluye campos para controlar el ciclo de vida completo, y el enum `InversionStatus` se extendió con el estado `LIQUIDADA`:
 
 ```typescript
+export enum InversionStatus {
+  ACTIVA = 'ACTIVA',
+  PENDIENTE_RETORNO = 'PENDIENTE_RETORNO',
+  COMPLETADA = 'COMPLETADA',
+  LIQUIDADA = 'LIQUIDADA' // Nueva: inversión liquidada con retorno registrado
+}
+
 export interface Inversion {
   // ... campos existentes ...
+  status: InversionStatus;
   
   // Campos nuevos para control del ciclo de vida
-  estado: 'ACTIVA' | 'LIQUIDADA';  // Estado actual de la inversión
-  montoEsperado?: number;           // Cuánto se espera recibir
-  montoRetornado?: number;          // Cuánto realmente regresó
-  fechaRetorno?: string;            // Fecha en que volvió el dinero
-  ganancia?: number;                // Diferencia (montoRetornado - monto)
+  montoEsperado?: number;    // Cuánto se espera recibir
+  montoRetornado?: number;   // Cuánto realmente regresó
+  fechaRetorno?: string;     // Fecha en que volvió el dinero
+  ganancia?: number;         // Diferencia (montoRetornado - monto)
 }
 ```
 
@@ -48,14 +55,16 @@ export const liquidarInversion = async (
 ```
 
 **Proceso:**
-1. Busca la inversión original en Firestore
-2. Calcula la ganancia: `montoRetornado - monto`
-3. Actualiza la inversión:
-   - `estado`: 'LIQUIDADA'
+1. Valida parámetros de entrada (ID válido, monto > 0)
+2. Busca la inversión original en Firestore
+3. Verifica que la inversión no esté ya liquidada
+4. Calcula la ganancia: `montoRetornado - monto`
+5. Actualiza la inversión:
+   - `status`: InversionStatus.LIQUIDADA
    - `montoRetornado`: el monto que regresó
    - `fechaRetorno`: la fecha de retorno
    - `ganancia`: la utilidad obtenida
-4. Crea automáticamente un nuevo movimiento de tipo `INGRESO`:
+6. Crea automáticamente un nuevo movimiento de tipo `INGRESO`:
    - Monto: el total que regresó
    - Descripción: "Retorno Inversión [Folio XXX] - {descripción original}"
    - Estado: PENDIENTE_CORTE (para incluirse en el próximo corte)
@@ -72,7 +81,7 @@ Es el dinero físico disponible. Baja cuando se presta dinero.
 
 #### Capital en la Calle
 ```
-Suma de inversiones con estado='ACTIVA'
+Suma de inversiones con status='ACTIVA' o 'PENDIENTE_RETORNO'
 ```
 Es el dinero que está con otras personas pero sigue siendo tuyo.
 
@@ -91,7 +100,7 @@ Es el valor real de todos tus activos. **Este es el número que debe verse en gr
 
 **Paso 1: Crear Inversión**
 - Le prestas $1,000 a tu hermano
-- Se crea una inversión con `estado: 'ACTIVA'`
+- Se crea una inversión con `status: InversionStatus.ACTIVA`
 - Resultado:
   - Efectivo en Mano: $2,000 ✓
   - Capital en la Calle: $1,000 ✓
@@ -151,14 +160,11 @@ const handleLiquidarInversion = async (inversionId: string, monto: number) => {
 
 ## Compatibilidad con Datos Existentes
 
-La implementación incluye compatibilidad hacia atrás:
+La implementación mantiene compatibilidad total con inversiones existentes:
 
-```typescript
-// En fetchInversiones y listenToInversiones:
-estado: data.estado || 'ACTIVA'  // Por defecto ACTIVA si no existe
-```
-
-Las inversiones existentes sin el campo `estado` se tratan automáticamente como 'ACTIVA'.
+- Inversiones con `status: 'ACTIVA'` o `'PENDIENTE_RETORNO'` se consideran activas (capital en la calle)
+- Inversiones con `status: 'COMPLETADA'` o `'LIQUIDADA'` se consideran cerradas (para cálculo de ROI)
+- Los nuevos campos opcionales (`montoEsperado`, `fechaRetorno`, `ganancia`) se agregan solo cuando se liquida una inversión
 
 ## Testing
 

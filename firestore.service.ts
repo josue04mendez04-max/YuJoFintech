@@ -11,10 +11,11 @@ import {
   orderBy,
   setDoc,
   onSnapshot,
-  Unsubscribe
+  Unsubscribe,
+  getDoc
 } from 'firebase/firestore';
 import { db } from './firebase.config';
-import { Movement, MovementStatus, MovementType, Inversion } from './types';
+import { Movement, MovementStatus, MovementType, Inversion, InversionStatus } from './types';
 
 // Collection name for this app
 const COLLECTION_NAME = 'yujofintech';
@@ -155,8 +156,7 @@ export const fetchInversiones = async (): Promise<Inversion[]> => {
         status: data.status,
         notas: data.notas,
         timestamp: data.timestamp,
-        // Nuevos campos para el ciclo de vida
-        estado: data.estado || 'ACTIVA', // Por defecto ACTIVA si no existe
+        // Campos para el ciclo de vida
         montoEsperado: data.montoEsperado,
         montoRetornado: data.montoRetornado ? Number(data.montoRetornado) : undefined,
         fechaRetorno: data.fechaRetorno,
@@ -212,8 +212,7 @@ export const listenToInversiones = (
         status: data.status,
         notas: data.notas,
         timestamp: data.timestamp,
-        // Nuevos campos para el ciclo de vida
-        estado: data.estado || 'ACTIVA', // Por defecto ACTIVA si no existe
+        // Campos para el ciclo de vida
         montoEsperado: data.montoEsperado,
         montoRetornado: data.montoRetornado ? Number(data.montoRetornado) : undefined,
         fechaRetorno: data.fechaRetorno,
@@ -260,9 +259,26 @@ export const updateInversion = async (
 
 /**
  * Liquidar una inversión - Marca la inversión como liquidada y crea un ingreso automático
+ * 
+ * Esta función realiza dos operaciones atómicas:
+ * 1. Actualiza la inversión a status LIQUIDADA con todos los datos de retorno
+ * 2. Crea automáticamente un movimiento INGRESO por el monto retornado
+ * 
  * @param inversionId - ID de la inversión a liquidar
- * @param montoRetornado - Monto total que regresó
+ * @param montoRetornado - Monto total que regresó (debe ser mayor a 0)
  * @param fechaRetorno - Fecha en que se recibió el retorno (opcional, por defecto hoy)
+ * 
+ * @throws Error si la inversión no existe
+ * @throws Error si la inversión ya está liquidada
+ * @throws Error si el montoRetornado es inválido (≤ 0)
+ * @throws Error si hay problemas de conexión con Firestore
+ * 
+ * @example
+ * // Liquidar una inversión con ganancia
+ * await liquidarInversion('inv-123', 1200);
+ * 
+ * // Liquidar con fecha específica
+ * await liquidarInversion('inv-123', 1200, '2026-01-14');
  */
 export const liquidarInversion = async (
   inversionId: string,
@@ -270,21 +286,36 @@ export const liquidarInversion = async (
   fechaRetorno?: string
 ): Promise<void> => {
   try {
+    // Validación de parámetros
+    if (!inversionId || inversionId.trim() === '') {
+      throw new Error('El ID de la inversión es requerido');
+    }
+    
+    if (montoRetornado <= 0) {
+      throw new Error('El monto retornado debe ser mayor a 0');
+    }
+    
     // 1. Obtener la inversión original
     const inversionRef = doc(db, INVERSIONES_COLLECTION, inversionId);
-    const inversionSnapshot = await (await import('firebase/firestore')).getDoc(inversionRef);
+    const inversionSnapshot = await getDoc(inversionRef);
     
     if (!inversionSnapshot.exists()) {
       throw new Error(`Inversión con ID ${inversionId} no encontrada`);
     }
     
     const inversion = inversionSnapshot.data() as Inversion;
+    
+    // Validar que la inversión no esté ya liquidada
+    if (inversion.status === InversionStatus.LIQUIDADA) {
+      throw new Error(`La inversión ${inversionId} ya está liquidada`);
+    }
+    
     const ganancia = montoRetornado - inversion.monto;
     const fechaRetornoFinal = fechaRetorno || new Date().toISOString().split('T')[0];
     
     // 2. Actualizar la inversión a LIQUIDADA
     await updateDoc(inversionRef, {
-      estado: 'LIQUIDADA',
+      status: InversionStatus.LIQUIDADA,
       montoRetornado: montoRetornado,
       fechaRetorno: fechaRetornoFinal,
       ganancia: ganancia,

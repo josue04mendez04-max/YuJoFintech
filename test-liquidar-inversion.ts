@@ -22,7 +22,6 @@ async function testLiquidarInversion() {
       responsable: 'Hermano Test',
       fechaInicio: new Date().toISOString().split('T')[0],
       status: 'ACTIVA',
-      estado: 'ACTIVA',
       montoEsperado: 1200
     };
 
@@ -41,7 +40,7 @@ async function testLiquidarInversion() {
     if (!inversionCreada) {
       throw new Error('Inversión no encontrada en base de datos');
     }
-    console.log(`   ✓ Inversión encontrada con estado: ${inversionCreada.estado}\n`);
+    console.log(`   ✓ Inversión encontrada con status: ${inversionCreada.status}\n`);
 
     // Test 3: Obtener movimientos actuales antes de liquidar
     console.log('✅ Test 3: Contando movimientos actuales...');
@@ -65,13 +64,13 @@ async function testLiquidarInversion() {
       throw new Error('Inversión no encontrada después de liquidar');
     }
 
-    console.log(`   Estado: ${inversionLiquidada.estado}`);
+    console.log(`   Status: ${inversionLiquidada.status}`);
     console.log(`   Monto retornado: $${inversionLiquidada.montoRetornado}`);
     console.log(`   Ganancia: $${inversionLiquidada.ganancia}`);
     console.log(`   Fecha retorno: ${inversionLiquidada.fechaRetorno}\n`);
 
-    if (inversionLiquidada.estado !== 'LIQUIDADA') {
-      throw new Error(`Estado incorrecto: ${inversionLiquidada.estado}`);
+    if (inversionLiquidada.status !== 'LIQUIDADA') {
+      throw new Error(`Status incorrecto: ${inversionLiquidada.status}`);
     }
 
     if (inversionLiquidada.montoRetornado !== montoRetornado) {

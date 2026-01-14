@@ -30,16 +30,19 @@ const Dashboard: React.FC<DashboardProps> = ({ movements, inversiones, vault, on
     const efectivoEnMano = ingresos - gastos - inversionesSalientes;
     
     // 2. Capital en la Calle (Inversiones Activas):
-    // Sumatoria de todas las inversiones con estado 'ACTIVA'
+    // Sumatoria de todas las inversiones con status 'ACTIVA'
+    // Incluye ACTIVA y PENDIENTE_RETORNO para inversiones antiguas
     const capitalEnLaCalle = inversiones
-      .filter(i => i.estado === 'ACTIVA')
+      .filter(i => i.status === 'ACTIVA' || i.status === 'PENDIENTE_RETORNO')
       .reduce((a, b) => a + b.monto, 0);
     
     // 3. PATRIMONIO TOTAL: Efectivo en Mano + Capital en la Calle
     const patrimonioTotal = efectivoEnMano + capitalEnLaCalle;
     
-    // Cálculo de ROI para inversiones liquidadas
-    const inversionesLiquidadas = inversiones.filter(i => i.estado === 'LIQUIDADA' && i.montoRetornado);
+    // Cálculo de ROI para inversiones liquidadas o completadas
+    const inversionesLiquidadas = inversiones.filter(i => 
+      (i.status === 'LIQUIDADA' || i.status === 'COMPLETADA') && i.montoRetornado
+    );
     const totalInvertido = inversionesLiquidadas.reduce((a, b) => a + b.monto, 0);
     const totalRetornado = inversionesLiquidadas.reduce((a, b) => a + (b.montoRetornado || 0), 0);
     const gananciaTotal = totalRetornado - totalInvertido;
