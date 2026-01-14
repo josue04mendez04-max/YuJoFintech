@@ -28,7 +28,11 @@ const InvestmentManager: React.FC<InvestmentManagerProps> = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    const inversionId = `INV-${Math.random().toString(36).substr(2, 6).toUpperCase()}`;
+    // Use crypto.randomUUID if available, otherwise fall back to timestamp-based ID
+    const inversionId = typeof crypto !== 'undefined' && crypto.randomUUID 
+      ? `INV-${crypto.randomUUID().slice(0, 8).toUpperCase()}`
+      : `INV-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substr(2, 4).toUpperCase()}`;
+    
     const monto = parseFloat(formData.monto);
     
     // Crear la inversión

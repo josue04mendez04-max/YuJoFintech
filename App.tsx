@@ -252,11 +252,18 @@ const App: React.FC = () => {
     } catch (error) {
       console.error("Error al registrar retorno de inversión:", error);
       setSyncStatus('error');
-      // Revertir cambios
+      // Revertir cambios completos
       setInversiones(prev => prev.map(i => i.id === inversion.id ? inversion : i));
-      setMovements(prev => prev.filter(m => 
-        m.id !== returnMovement.id && m.id !== gananciaMovement?.id
-      ));
+      setMovements(prev => {
+        // Remover los movimientos de retorno que agregamos
+        const filtered = prev.filter(m => 
+          m.id !== returnMovement.id && m.id !== gananciaMovement?.id
+        );
+        // Restaurar el estado original del movimiento de inversión
+        return filtered.map(m => 
+          m.id === `SAL-${inversion.id}` ? { ...m, status: MovementStatus.EN_CURSO } : m
+        );
+      });
     }
   };
 
