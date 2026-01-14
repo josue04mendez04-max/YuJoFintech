@@ -119,7 +119,7 @@ const App: React.FC = () => {
       
       // Crear movimiento de retorno del capital
       const returnMovement: Movement = {
-        id: `RET-${Math.random().toString(36).substring(2, 7).toUpperCase()}`,
+        id: `RET-${Math.random().toString(36).substring(2, 8).toUpperCase()}`,
         type: MovementType.INGRESO,
         category: 'Inversión Retornada',
         amount: montoRetorno,
