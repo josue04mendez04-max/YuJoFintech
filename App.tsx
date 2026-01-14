@@ -1,12 +1,13 @@
 
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
-import { Movement, MovementType, MovementStatus, VaultCount, CorteSummary } from './types';
+import { Movement, MovementType, MovementStatus, VaultCount, CorteSummary, Inversion, InversionStatus } from './types';
 import Dashboard from './components/Dashboard';
 import Registry from './components/Registry';
 import Vault from './components/Vault';
 import CorteDeCaja from './components/CorteDeCaja';
 import CortHistory from './components/CortHistory';
 import CortDetailModal from './components/CortDetailModal';
+import InvestmentManager from './components/InvestmentManager';
 import Sidebar from './components/Sidebar';
 import PinPad from './components/PinPad';
 import Receipt from './components/Receipt';
@@ -15,10 +16,11 @@ import * as FirestoreService from './firestore.service';
 import * as ConciliacionService from './conciliacion.service';
 
 const App: React.FC = () => {
-  const [view, setView] = useState<'dashboard' | 'notaria' | 'contabilidad' | 'corte' | 'historialCortes'>('dashboard');
+  const [view, setView] = useState<'dashboard' | 'notaria' | 'contabilidad' | 'corte' | 'historialCortes' | 'inversiones'>('dashboard');
   
-  // Estado de movimientos
+  // Estado de movimientos e inversiones
   const [movements, setMovements] = useState<Movement[]>([]);
+  const [inversiones, setInversiones] = useState<Inversion[]>([]);
   
   const [vault, setVault] = useState<VaultCount>({
     bills: { '1000': 0, '500': 0, '200': 0, '100': 0, '50': 0, '20': 0 },
@@ -46,6 +48,11 @@ const App: React.FC = () => {
     try {
       const data = await FirestoreService.fetchMovements();
       setMovements(data);
+      
+      // También cargar inversiones
+      const inversionesData = await FirestoreService.fetchInversiones();
+      setInversiones(inversionesData);
+      
       setSyncStatus('synced');
       console.log("YuJo: Sincronización exitosa con Firebase Firestore.");
     } catch (err: any) {
@@ -143,11 +150,128 @@ const App: React.FC = () => {
     }
   };
 
+  // Manejadores para el nuevo sistema de inversiones
+  const handleCreateInvestment = async (inversion: Inversion, movement: Movement) => {
+    // Actualizar estado local optimísticamente
+    setInversiones(prev => [...prev, inversion]);
+    setMovements(prev => [...prev, movement]);
+
+    // Persistir en Firebase
+    try {
+      setSyncStatus('syncing');
+      await FirestoreService.setInversion(inversion);
+      await FirestoreService.addMovement(movement);
+      setSyncStatus('synced');
+      alert(`Inversión registrada: $${inversion.monto.toLocaleString()} se han retirado de caja.`);
+    } catch (error) {
+      console.error("Error al crear inversión:", error);
+      setSyncStatus('error');
+      // Revertir cambios locales
+      setInversiones(prev => prev.filter(i => i.id !== inversion.id));
+      setMovements(prev => prev.filter(m => m.id !== movement.id));
+    }
+  };
+
+  const handleReturnInvestmentNew = async (inversion: Inversion, montoRetornado: number) => {
+    const ganancia = montoRetornado - inversion.monto;
+    
+    // Crear movimiento de ingreso por el monto original
+    const returnMovement: Movement = {
+      id: `RET-${inversion.id}`,
+      type: MovementType.INGRESO,
+      category: 'Inversión Retornada',
+      amount: inversion.monto,
+      description: `RETORNO CAPITAL: ${inversion.descripcion}`,
+      responsible: inversion.responsable,
+      authorization: 'Josué M.',
+      date: new Date().toISOString().split('T')[0],
+      status: MovementStatus.PENDIENTE_CORTE
+    };
+
+    // Si hay ganancia, crear un movimiento separado para ella
+    const gananciaMovement: Movement | null = ganancia > 0 ? {
+      id: `GAN-${inversion.id}`,
+      type: MovementType.INGRESO,
+      category: 'Utilidad Inversión',
+      amount: ganancia,
+      description: `GANANCIA: ${inversion.descripcion}`,
+      responsible: inversion.responsable,
+      authorization: 'Josué M.',
+      date: new Date().toISOString().split('T')[0],
+      status: MovementStatus.PENDIENTE_CORTE
+    } : null;
+
+    // Actualizar la inversión a completada
+    const updatedInversion: Inversion = {
+      ...inversion,
+      status: InversionStatus.COMPLETADA,
+      montoRetornado,
+      ganancia,
+      fechaRetornoReal: new Date().toISOString().split('T')[0]
+    };
+
+    // Marcar el movimiento de inversión original como archivado
+    const invMovement = movements.find(m => m.id === `SAL-${inversion.id}`);
+    
+    // Actualizar estados locales
+    setInversiones(prev => prev.map(i => i.id === inversion.id ? updatedInversion : i));
+    setMovements(prev => {
+      const updated = prev.map(m => 
+        m.id === `SAL-${inversion.id}` ? { ...m, status: MovementStatus.ARCHIVADO } : m
+      );
+      updated.push(returnMovement);
+      if (gananciaMovement) updated.push(gananciaMovement);
+      return updated;
+    });
+
+    // Persistir en Firebase
+    try {
+      setSyncStatus('syncing');
+      await FirestoreService.updateInversion(inversion.id, {
+        status: InversionStatus.COMPLETADA,
+        montoRetornado,
+        ganancia,
+        fechaRetornoReal: new Date().toISOString().split('T')[0]
+      });
+      await FirestoreService.addMovement(returnMovement);
+      if (gananciaMovement) {
+        await FirestoreService.addMovement(gananciaMovement);
+      }
+      if (invMovement) {
+        await FirestoreService.updateMovementStatus(invMovement.id, MovementStatus.ARCHIVADO);
+      }
+      setSyncStatus('synced');
+      
+      const mensaje = ganancia > 0 
+        ? `¡Inversión completada con éxito!\n\nCapital retornado: $${inversion.monto.toLocaleString()}\nGanancia: $${ganancia.toLocaleString()}\nTotal: $${montoRetornado.toLocaleString()}`
+        : ganancia < 0
+        ? `Inversión completada con pérdida.\n\nCapital retornado: $${montoRetornado.toLocaleString()}\nPérdida: $${Math.abs(ganancia).toLocaleString()}`
+        : `Inversión completada sin ganancia ni pérdida.\n\nCapital retornado: $${montoRetornado.toLocaleString()}`;
+      
+      alert(mensaje);
+    } catch (error) {
+      console.error("Error al registrar retorno de inversión:", error);
+      setSyncStatus('error');
+      // Revertir cambios completos
+      setInversiones(prev => prev.map(i => i.id === inversion.id ? inversion : i));
+      setMovements(prev => {
+        // Remover los movimientos de retorno que agregamos
+        const filtered = prev.filter(m => 
+          m.id !== returnMovement.id && m.id !== gananciaMovement?.id
+        );
+        // Restaurar el estado original del movimiento de inversión
+        return filtered.map(m => 
+          m.id === `SAL-${inversion.id}` ? { ...m, status: MovementStatus.EN_CURSO } : m
+        );
+      });
+    }
+  };
+
   const performCorte = () => {
     // Usar el servicio de conciliación para cálculos más robustos
     const conciliacion = ConciliacionService.calcularConciliacion({
       movements,
-      inversiones: [], // Se obtendría del estado real en una app completa
+      inversiones: inversiones,
       physicalTotal,
       saldoInicial: 0 // Podría venir de un estado persistido
     });
@@ -216,6 +340,7 @@ const App: React.FC = () => {
                 {view === 'contabilidad' && 'La Bóveda'}
                 {view === 'corte' && 'Corte de Caja'}
                 {view === 'historialCortes' && 'Historial de Cortes'}
+                {view === 'inversiones' && 'Gestión de Inversiones'}
               </h1>
               <p className="text-forest-green/70 text-xs sm:text-sm font-medium italic max-w-lg">
                 "Hola Josué. {syncStatus === 'error' ? 'Modo local activo.' : 'Tu patrimonio está sincronizado.'}"
@@ -258,7 +383,7 @@ const App: React.FC = () => {
             {view === 'dashboard' && (
               <Dashboard 
                 movements={movements}
-                inversiones={[]}
+                inversiones={inversiones}
                 vault={vault}
                 onOpenVault={() => setView('contabilidad')}
                 onPerformCut={() => setView('corte')}
@@ -294,6 +419,14 @@ const App: React.FC = () => {
                 onViewDetails={(cutId) => {
                   setSelectedCortDetail({ cutId, isOpen: true });
                 }}
+              />
+            )}
+
+            {view === 'inversiones' && (
+              <InvestmentManager 
+                inversiones={inversiones}
+                onCreateInvestment={handleCreateInvestment}
+                onReturnInvestment={handleReturnInvestmentNew}
               />
             )}
           </>

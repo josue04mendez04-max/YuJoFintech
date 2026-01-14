@@ -2,8 +2,8 @@
 import React, { useState } from 'react';
 
 interface SidebarProps {
-  currentView: 'dashboard' | 'notaria' | 'contabilidad' | 'corte' | 'historialCortes';
-  setView: (view: 'dashboard' | 'notaria' | 'contabilidad' | 'corte' | 'historialCortes') => void;
+  currentView: 'dashboard' | 'notaria' | 'contabilidad' | 'corte' | 'historialCortes' | 'inversiones';
+  setView: (view: 'dashboard' | 'notaria' | 'contabilidad' | 'corte' | 'historialCortes' | 'inversiones') => void;
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ currentView, setView }) => {
@@ -12,6 +12,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, setView }) => {
   const navItems = [
     { id: 'dashboard', label: 'El Atrio', icon: 'dashboard' },
     { id: 'notaria', label: 'La Notaría', icon: 'edit_document' },
+    { id: 'inversiones', label: 'Inversiones', icon: 'trending_up' },
     { id: 'contabilidad', label: 'Contabilidad', icon: 'calculate' },
     { id: 'corte', label: 'Corte de Caja', icon: 'receipt_long' },
     { id: 'historialCortes', label: 'Historial de Cortes', icon: 'history' },
