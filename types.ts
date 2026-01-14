@@ -8,7 +8,8 @@ export enum MovementType {
 export enum InversionStatus {
   ACTIVA = 'ACTIVA',
   PENDIENTE_RETORNO = 'PENDIENTE_RETORNO',
-  COMPLETADA = 'COMPLETADA'
+  COMPLETADA = 'COMPLETADA',
+  LIQUIDADA = 'LIQUIDADA' // Nueva: inversión que fue liquidada con retorno registrado
 }
 
 export enum MovementStatus {
@@ -42,7 +43,11 @@ export interface Inversion {
   status: InversionStatus;
   notas?: string;
   timestamp?: string;
-  montoRetornado?: number; // Monto total retornado para cálculo de ROI
+  // Campos para controlar el ciclo de vida del dinero
+  montoEsperado?: number; // Cuánto prometió devolver (opcional)
+  montoRetornado?: number; // Cuánto devolvió realmente (se llena al final)
+  fechaRetorno?: string; // Cuándo volvió el dinero
+  ganancia?: number; // La diferencia extra (Utilidad)
 }
 
 export interface VaultCount {
