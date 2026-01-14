@@ -18,11 +18,19 @@ const Dashboard: React.FC<DashboardProps> = ({ movements, inversiones, vault, on
     const ingresos = activeCycle.filter(m => m.type === MovementType.INGRESO).reduce((a, b) => a + b.amount, 0);
     const gastos = activeCycle.filter(m => m.type === MovementType.GASTO).reduce((a, b) => a + b.amount, 0);
     
-    // Inversiones CONGELADAS: dinero que salió pero volverá (status EN_CURSO en movements)
-    // IMPORTANTE: Estas se restan del balance porque ya salieron de caja
-    const inversionesCongeladas = movements
-      .filter(m => m.status === MovementStatus.EN_CURSO)
+    // Inversiones ACTIVAS: dinero que salió pero volverá
+    // Calculado desde el estado de inversiones para mayor precisión
+    const inversionesActivas = inversiones
+      .filter(i => i.status === 'ACTIVA' || i.status === 'PENDIENTE_RETORNO')
+      .reduce((a, b) => a + b.monto, 0);
+    
+    // También contamos inversiones desde movements (status EN_CURSO) por compatibilidad
+    const inversionesEnCurso = movements
+      .filter(m => m.status === MovementStatus.EN_CURSO && m.type === MovementType.INVERSION)
       .reduce((a, b) => a + b.amount, 0);
+    
+    // Total de inversiones congeladas (usamos el mayor de los dos para precisión)
+    const inversionesCongeladas = Math.max(inversionesActivas, inversionesEnCurso);
     
     // Balance real disponible = (Ingresos - Gastos) - Inversiones Congeladas
     // Porque las inversiones ya salieron de la caja pero vuelven después
@@ -30,7 +38,8 @@ const Dashboard: React.FC<DashboardProps> = ({ movements, inversiones, vault, on
     
     return { 
       balance: balanceDisponible,  // Este es el que sale en el dashboard
-      inversionesCongeladas
+      inversionesCongeladas,
+      inversionesActivas: inversiones.filter(i => i.status === 'ACTIVA' || i.status === 'PENDIENTE_RETORNO').length
     };
   }, [movements, inversiones]);
 
@@ -85,6 +94,10 @@ const Dashboard: React.FC<DashboardProps> = ({ movements, inversiones, vault, on
           <p className="text-white/40 font-bold uppercase tracking-[0.4em] text-[8px] sm:text-[9px] md:text-[10px] mb-2 sm:mb-3">Inversiones Activas</p>
           <h3 className="text-2xl sm:text-3xl md:text-5xl font-serif font-bold italic mb-4 sm:mb-8 text-mustard tracking-tight">${stats.inversionesCongeladas.toLocaleString()}</h3>
           <div className="space-y-3 sm:space-y-5 pt-3 sm:pt-6 border-t border-white/10 text-[8px] sm:text-[10px] uppercase tracking-[0.3em] font-bold opacity-50">
+             <div className="flex justify-between items-center">
+                <span>Proyectos</span>
+                <span className="text-mustard">{stats.inversionesActivas}</span>
+             </div>
              <div className="flex justify-between items-center">
                 <span>Riesgo</span>
                 <span className="text-green-400">Controlado</span>
