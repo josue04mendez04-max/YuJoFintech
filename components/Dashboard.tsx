@@ -13,36 +13,46 @@ interface DashboardProps {
 
 const Dashboard: React.FC<DashboardProps> = ({ movements, inversiones, vault, onOpenVault, onPerformCut }) => {
   const stats = useMemo(() => {
-    // Balance del ciclo: Solo lo que no ha sido cortado
+    // 1. Filtrar movimientos del ciclo actual (lo que no se ha cortado)
     const activeCycle = movements.filter(m => m.status === MovementStatus.PENDIENTE_CORTE);
-    const ingresos = activeCycle.filter(m => m.type === MovementType.INGRESO).reduce((a, b) => a + b.amount, 0);
-    const gastos = activeCycle.filter(m => m.type === MovementType.GASTO).reduce((a, b) => a + b.amount, 0);
     
-    // Inversiones CONGELADAS: dinero que salió pero volverá (status EN_CURSO en movements)
-    // IMPORTANTE: Estas se restan del balance porque ya salieron de caja
-    const inversionesCongeladas = movements
-      .filter(m => m.status === MovementStatus.EN_CURSO)
+    // 2. Calcular Ingresos y Gastos normales
+    const ingresos = activeCycle
+      .filter(m => m.type === MovementType.INGRESO)
+      .reduce((a, b) => a + b.amount, 0);
+      
+    const gastos = activeCycle
+      .filter(m => m.type === MovementType.GASTO)
       .reduce((a, b) => a + b.amount, 0);
     
-    // Balance real disponible = (Ingresos - Gastos) - Inversiones Congeladas
-    // Porque las inversiones ya salieron de la caja pero vuelven después
-    const balanceDisponible = ingresos - gastos - inversionesCongeladas;
+    // 3. Calcular Inversiones Activas (Dinero que tiene tu hermano)
+    // Buscamos movimientos de tipo INVERSION que estén EN CURSO (no liquidadas)
+    const inversionesCongeladas = movements
+      .filter(m => m.type === MovementType.INVERSION && m.status === MovementStatus.EN_CURSO)
+      .reduce((a, b) => a + b.amount, 0);
     
-    // Cálculo de ROI para inversiones completadas
+    // 4. Calcular el "Total en Físico" (Lo que deberías tener en la caja)
+    // Físico = Ingresos - Gastos - Lo que salió para inversión
+    const totalFisico = ingresos - gastos - inversionesCongeladas;
+
+    // 5. Calcular "Patrimonio Total" (Tu dinero real)
+    // Patrimonio = Lo que tienes en físico + Lo que tienes invertido
+    const patrimonioTotal = totalFisico + inversionesCongeladas;
+
+    // Estadísticas de ROI (Retorno de Inversión) para las que ya volvieron
     const inversionesCompletadas = inversiones.filter(i => i.status === 'COMPLETADA' && i.montoRetornado);
-    const totalInvertido = inversionesCompletadas.reduce((a, b) => a + b.monto, 0);
-    const totalRetornado = inversionesCompletadas.reduce((a, b) => a + (b.montoRetornado || 0), 0);
-    const gananciaTotal = totalRetornado - totalInvertido;
-    const roiPorcentaje = totalInvertido > 0 ? ((gananciaTotal / totalInvertido) * 100) : 0;
+    const totalInvertidoHist = inversionesCompletadas.reduce((a, b) => a + b.monto, 0);
+    const totalRetornadoHist = inversionesCompletadas.reduce((a, b) => a + (b.montoRetornado || 0), 0);
+    const gananciaTotal = totalRetornadoHist - totalInvertidoHist;
+    const roiPorcentaje = totalInvertidoHist > 0 ? ((gananciaTotal / totalInvertidoHist) * 100) : 0;
     
     return { 
-      balance: balanceDisponible,  // Este es el que sale en el dashboard
-      inversionesCongeladas,
+      patrimonioTotal,       // TU DINERO REAL (Número Grande)
+      totalFisico,           // TU CAJA (Número Pequeño 1)
+      inversionesCongeladas, // TU INVERSIÓN (Número Pequeño 2)
       roi: {
         porcentaje: roiPorcentaje,
         gananciaTotal,
-        totalInvertido,
-        totalRetornado,
         cantidadInversiones: inversionesCompletadas.length
       }
     };
@@ -56,102 +66,99 @@ const Dashboard: React.FC<DashboardProps> = ({ movements, inversiones, vault, on
     return total;
   }, [vault]);
 
+  // Datos para la gráfica (simulados basados en el patrimonio)
   const chartData = [
-    { name: 'P1', val: stats.balance * 0.4 },
-    { name: 'P2', val: stats.balance * 0.7 },
-    { name: 'P3', val: stats.balance * 0.5 },
-    { name: 'P4', val: stats.balance * 0.9 },
-    { name: 'P5', val: stats.balance * 0.8 },
-    { name: 'P6', val: stats.balance * 1.0 },
+    { name: 'Inicio', val: stats.patrimonioTotal * 0.9 },
+    { name: 'Actual', val: stats.patrimonioTotal },
   ];
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 md:gap-10">
-      {/* Panel Principal */}
+      {/* Panel Principal - Muestra el PATRIMONIO (Suma de todo) */}
       <div className="lg:col-span-2 glass rounded-xl sm:rounded-2xl md:rounded-[32px] p-4 sm:p-8 md:p-12 text-white flex flex-col justify-between shadow-glass-panel relative overflow-hidden">
         <div className="absolute top-0 right-0 p-6 sm:p-12 opacity-5 pointer-events-none">
-          <span className="material-symbols-outlined text-[4rem] sm:text-[8rem] md:text-[12rem]">account_balance</span>
+          <span className="material-symbols-outlined text-[4rem] sm:text-[8rem] md:text-[12rem]">account_balance_wallet</span>
         </div>
+        
         <div className="relative z-10">
-          <p className="text-white/40 font-bold uppercase tracking-[0.4em] text-[8px] sm:text-[9px] md:text-[10px] mb-2 sm:mb-4">Balance en Sistema • Ciclo Actual</p>
-          <h3 className="text-3xl sm:text-5xl md:text-8xl font-serif font-bold italic tracking-tighter mustard-glow">
-            ${stats.balance.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+          <p className="text-white/40 font-bold uppercase tracking-[0.4em] text-[8px] sm:text-[9px] md:text-[10px] mb-2 sm:mb-4">
+            Patrimonio Total (Caja + Inversiones)
+          </p>
+          <h3 className="text-3xl sm:text-5xl md:text-8xl font-serif font-bold italic tracking-tighter text-white">
+            ${stats.patrimonioTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}
           </h3>
+          
+          {/* Desglose: Físico vs Inversión */}
+          <div className="flex gap-8 mt-6">
+            <div>
+              <p className="text-white/60 text-xs uppercase tracking-widest mb-1">En Caja (Físico)</p>
+              <p className={`text-2xl font-bold font-serif ${stats.totalFisico < 0 ? 'text-red-400' : 'text-green-400'}`}>
+                ${stats.totalFisico.toLocaleString()}
+              </p>
+            </div>
+            <div className="border-l border-white/10 pl-8">
+              <p className="text-mustard/60 text-xs uppercase tracking-widest mb-1">En Inversiones</p>
+              <p className="text-2xl font-bold font-serif text-mustard">
+                ${stats.inversionesCongeladas.toLocaleString()}
+              </p>
+            </div>
+          </div>
         </div>
+
         <div className="mt-4 sm:mt-8 md:mt-12 h-24 sm:h-32 md:h-44 w-full relative z-10">
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={chartData}>
               <defs>
-                <linearGradient id="colorMustard" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#E1AD01" stopOpacity={0.7}/>
-                  <stop offset="95%" stopColor="#E1AD01" stopOpacity={0}/>
+                <linearGradient id="colorPatrimonio" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#ffffff" stopOpacity={0.3}/>
+                  <stop offset="95%" stopColor="#ffffff" stopOpacity={0}/>
                 </linearGradient>
               </defs>
-              <Area type="monotone" dataKey="val" stroke="#E1AD01" strokeWidth={4} fillOpacity={1} fill="url(#colorMustard)" />
+              <Area type="monotone" dataKey="val" stroke="#ffffff" strokeWidth={3} fillOpacity={1} fill="url(#colorPatrimonio)" />
             </AreaChart>
           </ResponsiveContainer>
         </div>
       </div>
 
-      {/* Inversiones y Acciones */}
+      {/* Panel Lateral - Acciones Rápidas */}
       <div className="flex flex-col gap-4 sm:gap-6 md:gap-8">
-        <div className="glass rounded-xl sm:rounded-2xl md:rounded-[32px] p-5 sm:p-8 md:p-10 text-white shadow-glass-panel flex-1 border-t border-white/20">
-          <p className="text-white/40 font-bold uppercase tracking-[0.4em] text-[8px] sm:text-[9px] md:text-[10px] mb-2 sm:mb-3">Inversiones Activas</p>
-          <h3 className="text-2xl sm:text-3xl md:text-5xl font-serif font-bold italic mb-4 sm:mb-8 text-mustard tracking-tight">${stats.inversionesCongeladas.toLocaleString()}</h3>
-          <div className="space-y-3 sm:space-y-5 pt-3 sm:pt-6 border-t border-white/10 text-[8px] sm:text-[10px] uppercase tracking-[0.3em] font-bold opacity-50">
-             <div className="flex justify-between items-center">
-                <span>Riesgo</span>
-                <span className="text-green-400">Controlado</span>
-             </div>
-             <div className="flex justify-between items-center">
-                <span>Vigilancia</span>
-                <span className="text-mustard">YuJo Active</span>
-             </div>
+        {/* Tarjeta de Inversiones */}
+        <div className="glass rounded-xl sm:rounded-2xl md:rounded-[32px] p-5 sm:p-8 md:p-10 text-white shadow-glass-panel flex-1 border-t border-mustard/20">
+          <div className="flex justify-between items-start mb-4">
+            <div>
+              <p className="text-mustard font-bold uppercase tracking-[0.4em] text-[8px] sm:text-[9px] md:text-[10px] mb-2">
+                Capital Invertido
+              </p>
+              <h3 className="text-2xl sm:text-3xl md:text-5xl font-serif font-bold italic text-white">
+                ${stats.inversionesCongeladas.toLocaleString()}
+              </h3>
+            </div>
+            <span className="material-symbols-outlined text-mustard text-3xl">trending_up</span>
+          </div>
+          
+          <div className="mt-4 p-4 bg-white/5 rounded-xl border border-white/10">
+            <p className="text-xs text-white/40 uppercase tracking-wider mb-1">Ganancia Histórica</p>
+            <p className="text-green-400 font-bold text-xl">+${stats.roi.gananciaTotal.toLocaleString()}</p>
           </div>
         </div>
 
-        {/* ROI Card - Utilidad por Inversión */}
-        {stats.roi.cantidadInversiones > 0 && (
-          <div className="glass rounded-xl sm:rounded-2xl md:rounded-[32px] p-5 sm:p-8 md:p-10 text-white shadow-glass-panel border-t border-green-500/20">
-            <p className="text-white/40 font-bold uppercase tracking-[0.4em] text-[8px] sm:text-[9px] md:text-[10px] mb-2 sm:mb-3">Utilidad por Inversión</p>
-            <div className="flex items-baseline gap-2 mb-4 sm:mb-6">
-              <h3 className={`text-2xl sm:text-3xl md:text-4xl font-serif font-bold italic tracking-tight ${
-                stats.roi.porcentaje >= 0 ? 'text-green-400' : 'text-red-400'
-              }`}>
-                {stats.roi.porcentaje >= 0 ? '+' : ''}{stats.roi.porcentaje.toFixed(1)}%
-              </h3>
-              <span className="text-white/40 text-[8px] sm:text-[10px] uppercase font-bold">ROI</span>
-            </div>
-            <div className="space-y-2 sm:space-y-3 pt-3 sm:pt-4 border-t border-white/10 text-[8px] sm:text-[10px]">
-              <div className="flex justify-between items-center text-white/60">
-                <span>Invertido</span>
-                <span className="font-serif text-white">${stats.roi.totalInvertido.toLocaleString()}</span>
-              </div>
-              <div className="flex justify-between items-center text-white/60">
-                <span>Retornado</span>
-                <span className="font-serif text-green-300">${stats.roi.totalRetornado.toLocaleString()}</span>
-              </div>
-              <div className="flex justify-between items-center text-white/60 pt-2 border-t border-white/5">
-                <span className="uppercase font-bold">Ganancia</span>
-                <span className={`font-serif font-bold ${stats.roi.gananciaTotal >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                  ${Math.abs(stats.roi.gananciaTotal).toLocaleString()}
-                </span>
-              </div>
-              <div className="text-center text-white/30 text-[7px] sm:text-[8px] pt-2">
-                {stats.roi.cantidadInversiones} {stats.roi.cantidadInversiones === 1 ? 'inversión completada' : 'inversiones completadas'}
-              </div>
-            </div>
-          </div>
-        )}
-
-        <button 
-          onClick={onPerformCut}
-          className="liquid-btn text-forest-green font-bold text-sm sm:text-lg md:text-2xl py-4 sm:py-5 md:py-7 rounded-lg sm:rounded-2xl md:rounded-[32px] flex items-center justify-center gap-2 sm:gap-4 uppercase tracking-[0.2em] hover:scale-[1.02] w-full"
-        >
-          <span className="material-symbols-outlined text-xl sm:text-2xl md:text-3xl">account_balance_wallet</span>
-          <span className="hidden sm:inline">Ejecutar Corte</span>
-          <span className="sm:hidden">Corte</span>
-        </button>
+        {/* Botones de Acción */}
+        <div className="grid grid-cols-2 gap-3">
+            <button 
+              onClick={onPerformCut}
+              className="glass p-4 rounded-2xl flex flex-col items-center justify-center gap-2 hover:bg-white/10 transition-all group border border-white/10"
+            >
+              <span className="material-symbols-outlined text-3xl group-hover:scale-110 transition-transform">content_cut</span>
+              <span className="text-xs font-bold uppercase tracking-wider">Corte Caja</span>
+            </button>
+            <button 
+              onClick={onOpenVault}
+              className="glass p-4 rounded-2xl flex flex-col items-center justify-center gap-2 hover:bg-white/10 transition-all group border border-white/10"
+            >
+              <span className="material-symbols-outlined text-3xl group-hover:scale-110 transition-transform">lock</span>
+              <span className="text-xs font-bold uppercase tracking-wider">Bóveda</span>
+            </button>
+        </div>
       </div>
 
       {/* Barra de Cuadre */}
@@ -159,7 +166,7 @@ const Dashboard: React.FC<DashboardProps> = ({ movements, inversiones, vault, on
         <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-16 w-full md:w-auto">
            <div>
               <p className="text-white/40 text-[8px] sm:text-[10px] uppercase font-bold tracking-[0.4em] mb-1 sm:mb-2">Libros YuJo</p>
-              <p className="text-white text-2xl sm:text-3xl md:text-4xl font-serif italic font-bold tracking-tight">${stats.balance.toLocaleString()}</p>
+              <p className="text-white text-2xl sm:text-3xl md:text-4xl font-serif italic font-bold tracking-tight">${stats.totalFisico.toLocaleString()}</p>
            </div>
            <div className="h-12 sm:h-16 w-px bg-white/10 hidden sm:block"></div>
            <div>
@@ -176,7 +183,7 @@ const Dashboard: React.FC<DashboardProps> = ({ movements, inversiones, vault, on
             Sellar Bóveda
           </button>
           
-          {Math.abs(stats.balance - physicalTotal) < 0.01 ? (
+          {Math.abs(stats.totalFisico - physicalTotal) < 0.01 ? (
              <div className="bg-mustard/20 text-mustard px-4 sm:px-10 py-3 sm:py-5 rounded-lg sm:rounded-2xl flex items-center gap-2 sm:gap-3 font-bold border border-mustard/30 uppercase text-[8px] sm:text-[10px] tracking-[0.3em] shadow-lg shadow-mustard/10">
                 <span className="material-symbols-outlined text-sm sm:text-lg">verified</span>
                 <span className="hidden sm:inline">Cuadre Perfecto</span>
