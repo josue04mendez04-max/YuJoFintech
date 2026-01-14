@@ -14,7 +14,7 @@ import {
   Unsubscribe
 } from 'firebase/firestore';
 import { db } from './firebase.config';
-import { Movement, MovementStatus, Inversion } from './types';
+import { Movement, MovementStatus, MovementType, Inversion } from './types';
 
 // Collection name for this app
 const COLLECTION_NAME = 'yujofintech';
@@ -155,7 +155,12 @@ export const fetchInversiones = async (): Promise<Inversion[]> => {
         status: data.status,
         notas: data.notas,
         timestamp: data.timestamp,
-        montoRetornado: data.montoRetornado ? Number(data.montoRetornado) : undefined
+        // Nuevos campos para el ciclo de vida
+        estado: data.estado || 'ACTIVA', // Por defecto ACTIVA si no existe
+        montoEsperado: data.montoEsperado,
+        montoRetornado: data.montoRetornado ? Number(data.montoRetornado) : undefined,
+        fechaRetorno: data.fechaRetorno,
+        ganancia: data.ganancia
       });
     });
     
@@ -207,7 +212,12 @@ export const listenToInversiones = (
         status: data.status,
         notas: data.notas,
         timestamp: data.timestamp,
-        montoRetornado: data.montoRetornado ? Number(data.montoRetornado) : undefined
+        // Nuevos campos para el ciclo de vida
+        estado: data.estado || 'ACTIVA', // Por defecto ACTIVA si no existe
+        montoEsperado: data.montoEsperado,
+        montoRetornado: data.montoRetornado ? Number(data.montoRetornado) : undefined,
+        fechaRetorno: data.fechaRetorno,
+        ganancia: data.ganancia
       });
     });
     callback(inversiones);
@@ -244,6 +254,61 @@ export const updateInversion = async (
     });
   } catch (error) {
     console.error('Error updating inversion in Firestore:', error);
+    throw error;
+  }
+};
+
+/**
+ * Liquidar una inversión - Marca la inversión como liquidada y crea un ingreso automático
+ * @param inversionId - ID de la inversión a liquidar
+ * @param montoRetornado - Monto total que regresó
+ * @param fechaRetorno - Fecha en que se recibió el retorno (opcional, por defecto hoy)
+ */
+export const liquidarInversion = async (
+  inversionId: string,
+  montoRetornado: number,
+  fechaRetorno?: string
+): Promise<void> => {
+  try {
+    // 1. Obtener la inversión original
+    const inversionRef = doc(db, INVERSIONES_COLLECTION, inversionId);
+    const inversionSnapshot = await (await import('firebase/firestore')).getDoc(inversionRef);
+    
+    if (!inversionSnapshot.exists()) {
+      throw new Error(`Inversión con ID ${inversionId} no encontrada`);
+    }
+    
+    const inversion = inversionSnapshot.data() as Inversion;
+    const ganancia = montoRetornado - inversion.monto;
+    const fechaRetornoFinal = fechaRetorno || new Date().toISOString().split('T')[0];
+    
+    // 2. Actualizar la inversión a LIQUIDADA
+    await updateDoc(inversionRef, {
+      estado: 'LIQUIDADA',
+      montoRetornado: montoRetornado,
+      fechaRetorno: fechaRetornoFinal,
+      ganancia: ganancia,
+      timestamp: new Date().toISOString()
+    });
+    
+    // 3. Crear un nuevo movimiento de INGRESO para el retorno
+    const ingresoId = `retorno-inv-${inversionId}-${Date.now()}`;
+    const ingresoMovement: Movement = {
+      id: ingresoId,
+      type: MovementType.INGRESO,
+      amount: montoRetornado,
+      description: `Retorno Inversión [Folio ${inversionId.substring(0, 8)}] - ${inversion.descripcion}`,
+      responsible: inversion.responsable,
+      authorization: 'Josué M.',
+      date: fechaRetornoFinal,
+      status: MovementStatus.PENDIENTE_CORTE
+    };
+    
+    await addMovement(ingresoMovement);
+    
+    console.log(`YuJo: Inversión ${inversionId} liquidada exitosamente. Ganancia: $${ganancia}`);
+  } catch (error) {
+    console.error('Error liquidando inversión:', error);
     throw error;
   }
 };

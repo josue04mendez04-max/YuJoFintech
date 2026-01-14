@@ -42,7 +42,12 @@ export interface Inversion {
   status: InversionStatus;
   notas?: string;
   timestamp?: string;
-  montoRetornado?: number; // Monto total retornado para cálculo de ROI
+  // Campos para controlar el ciclo de vida del dinero
+  estado: 'ACTIVA' | 'LIQUIDADA'; // Para saber si el dinero sigue con el receptor
+  montoEsperado?: number; // Cuánto prometió devolver (opcional)
+  montoRetornado?: number; // Cuánto devolvió realmente (se llena al final)
+  fechaRetorno?: string; // Cuándo volvió el dinero
+  ganancia?: number; // La diferencia extra (Utilidad)
 }
 
 export interface VaultCount {

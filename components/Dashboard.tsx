@@ -18,32 +18,45 @@ const Dashboard: React.FC<DashboardProps> = ({ movements, inversiones, vault, on
     const ingresos = activeCycle.filter(m => m.type === MovementType.INGRESO).reduce((a, b) => a + b.amount, 0);
     const gastos = activeCycle.filter(m => m.type === MovementType.GASTO).reduce((a, b) => a + b.amount, 0);
     
-    // Inversiones CONGELADAS: dinero que salió pero volverá (status EN_CURSO en movements)
-    // IMPORTANTE: Estas se restan del balance porque ya salieron de caja
-    const inversionesCongeladas = movements
-      .filter(m => m.status === MovementStatus.EN_CURSO)
+    // Inversiones salientes del ciclo actual (dinero que salió como inversión)
+    const inversionesSalientes = activeCycle
+      .filter(m => m.type === MovementType.INVERSION)
       .reduce((a, b) => a + b.amount, 0);
     
-    // Balance real disponible = (Ingresos - Gastos) - Inversiones Congeladas
-    // Porque las inversiones ya salieron de la caja pero vuelven después
-    const balanceDisponible = ingresos - gastos - inversionesCongeladas;
+    // PASO 3: Separar en tres cubetas
     
-    // Cálculo de ROI para inversiones completadas
-    const inversionesCompletadas = inversiones.filter(i => i.status === 'COMPLETADA' && i.montoRetornado);
-    const totalInvertido = inversionesCompletadas.reduce((a, b) => a + b.monto, 0);
-    const totalRetornado = inversionesCompletadas.reduce((a, b) => a + (b.montoRetornado || 0), 0);
+    // 1. Efectivo en Mano (Caja): 
+    // Sumatoria(Ingresos) - Sumatoria(Gastos) - Sumatoria(Inversiones Salientes)
+    const efectivoEnMano = ingresos - gastos - inversionesSalientes;
+    
+    // 2. Capital en la Calle (Inversiones Activas):
+    // Sumatoria de todas las inversiones con estado 'ACTIVA'
+    const capitalEnLaCalle = inversiones
+      .filter(i => i.estado === 'ACTIVA')
+      .reduce((a, b) => a + b.monto, 0);
+    
+    // 3. PATRIMONIO TOTAL: Efectivo en Mano + Capital en la Calle
+    const patrimonioTotal = efectivoEnMano + capitalEnLaCalle;
+    
+    // Cálculo de ROI para inversiones liquidadas
+    const inversionesLiquidadas = inversiones.filter(i => i.estado === 'LIQUIDADA' && i.montoRetornado);
+    const totalInvertido = inversionesLiquidadas.reduce((a, b) => a + b.monto, 0);
+    const totalRetornado = inversionesLiquidadas.reduce((a, b) => a + (b.montoRetornado || 0), 0);
     const gananciaTotal = totalRetornado - totalInvertido;
     const roiPorcentaje = totalInvertido > 0 ? ((gananciaTotal / totalInvertido) * 100) : 0;
     
     return { 
-      balance: balanceDisponible,  // Este es el que sale en el dashboard
-      inversionesCongeladas,
+      efectivoEnMano,           // Dinero físico disponible
+      capitalEnLaCalle,         // Dinero en inversiones activas
+      patrimonioTotal,          // Total de patrimonio
+      balance: patrimonioTotal, // Para compatibilidad con código existente
+      inversionesCongeladas: capitalEnLaCalle, // Para compatibilidad
       roi: {
         porcentaje: roiPorcentaje,
         gananciaTotal,
         totalInvertido,
         totalRetornado,
-        cantidadInversiones: inversionesCompletadas.length
+        cantidadInversiones: inversionesLiquidadas.length
       }
     };
   }, [movements, inversiones]);
@@ -67,16 +80,26 @@ const Dashboard: React.FC<DashboardProps> = ({ movements, inversiones, vault, on
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 md:gap-10">
-      {/* Panel Principal */}
+      {/* Panel Principal - Patrimonio Total */}
       <div className="lg:col-span-2 glass rounded-xl sm:rounded-2xl md:rounded-[32px] p-4 sm:p-8 md:p-12 text-white flex flex-col justify-between shadow-glass-panel relative overflow-hidden">
         <div className="absolute top-0 right-0 p-6 sm:p-12 opacity-5 pointer-events-none">
           <span className="material-symbols-outlined text-[4rem] sm:text-[8rem] md:text-[12rem]">account_balance</span>
         </div>
         <div className="relative z-10">
-          <p className="text-white/40 font-bold uppercase tracking-[0.4em] text-[8px] sm:text-[9px] md:text-[10px] mb-2 sm:mb-4">Balance en Sistema • Ciclo Actual</p>
+          <p className="text-white/40 font-bold uppercase tracking-[0.4em] text-[8px] sm:text-[9px] md:text-[10px] mb-2 sm:mb-4">Patrimonio Total • Ciclo Actual</p>
           <h3 className="text-3xl sm:text-5xl md:text-8xl font-serif font-bold italic tracking-tighter mustard-glow">
-            ${stats.balance.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+            ${stats.patrimonioTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}
           </h3>
+          <div className="mt-4 sm:mt-6 flex flex-col sm:flex-row gap-3 sm:gap-6 text-[10px] sm:text-xs">
+            <div className="bg-white/5 rounded-lg px-3 py-2 border border-white/10">
+              <p className="text-white/40 uppercase tracking-widest mb-1">Efectivo en Mano</p>
+              <p className="text-white font-serif font-bold">${stats.efectivoEnMano.toLocaleString()}</p>
+            </div>
+            <div className="bg-white/5 rounded-lg px-3 py-2 border border-white/10">
+              <p className="text-white/40 uppercase tracking-widest mb-1">Capital en la Calle</p>
+              <p className="text-mustard font-serif font-bold">${stats.capitalEnLaCalle.toLocaleString()}</p>
+            </div>
+          </div>
         </div>
         <div className="mt-4 sm:mt-8 md:mt-12 h-24 sm:h-32 md:h-44 w-full relative z-10">
           <ResponsiveContainer width="100%" height="100%">
@@ -158,8 +181,8 @@ const Dashboard: React.FC<DashboardProps> = ({ movements, inversiones, vault, on
       <div className="lg:col-span-3 glass rounded-xl sm:rounded-2xl md:rounded-[32px] p-4 sm:p-8 md:p-10 flex flex-col md:flex-row items-center justify-between gap-4 sm:gap-8 md:gap-12 border-t border-white/20 shadow-glass-panel">
         <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-16 w-full md:w-auto">
            <div>
-              <p className="text-white/40 text-[8px] sm:text-[10px] uppercase font-bold tracking-[0.4em] mb-1 sm:mb-2">Libros YuJo</p>
-              <p className="text-white text-2xl sm:text-3xl md:text-4xl font-serif italic font-bold tracking-tight">${stats.balance.toLocaleString()}</p>
+              <p className="text-white/40 text-[8px] sm:text-[10px] uppercase font-bold tracking-[0.4em] mb-1 sm:mb-2">Efectivo en Mano</p>
+              <p className="text-white text-2xl sm:text-3xl md:text-4xl font-serif italic font-bold tracking-tight">${stats.efectivoEnMano.toLocaleString()}</p>
            </div>
            <div className="h-12 sm:h-16 w-px bg-white/10 hidden sm:block"></div>
            <div>
@@ -176,7 +199,7 @@ const Dashboard: React.FC<DashboardProps> = ({ movements, inversiones, vault, on
             Sellar Bóveda
           </button>
           
-          {Math.abs(stats.balance - physicalTotal) < 0.01 ? (
+          {Math.abs(stats.efectivoEnMano - physicalTotal) < 0.01 ? (
              <div className="bg-mustard/20 text-mustard px-4 sm:px-10 py-3 sm:py-5 rounded-lg sm:rounded-2xl flex items-center gap-2 sm:gap-3 font-bold border border-mustard/30 uppercase text-[8px] sm:text-[10px] tracking-[0.3em] shadow-lg shadow-mustard/10">
                 <span className="material-symbols-outlined text-sm sm:text-lg">verified</span>
                 <span className="hidden sm:inline">Cuadre Perfecto</span>
