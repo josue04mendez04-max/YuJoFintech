@@ -13,24 +13,30 @@ interface DashboardProps {
 
 const Dashboard: React.FC<DashboardProps> = ({ movements, inversiones, vault, onOpenVault, onPerformCut }) => {
   const stats = useMemo(() => {
-    // Balance del ciclo: Solo lo que no ha sido cortado
+    // Movimientos del ciclo actual (pendientes de corte)
     const activeCycle = movements.filter(m => m.status === MovementStatus.PENDIENTE_CORTE);
     const ingresos = activeCycle.filter(m => m.type === MovementType.INGRESO).reduce((a, b) => a + b.amount, 0);
     const gastos = activeCycle.filter(m => m.type === MovementType.GASTO).reduce((a, b) => a + b.amount, 0);
     
-    // Inversiones CONGELADAS: dinero que salió pero volverá (status EN_CURSO en movements)
-    // IMPORTANTE: Estas se restan del balance porque ya salieron de caja
-    const inversionesCongeladas = movements
-      .filter(m => m.status === MovementStatus.EN_CURSO)
+    // Inversiones ACTIVAS: dinero invertido que persiste entre ciclos (status EN_CURSO)
+    // Nota: Las inversiones se crean directamente con status EN_CURSO, no pasan por PENDIENTE_CORTE
+    // Por eso no afectan los cálculos de ingresos/gastos del ciclo actual
+    const inversionesActivas = movements
+      .filter(m => m.type === MovementType.INVERSION && m.status === MovementStatus.EN_CURSO)
       .reduce((a, b) => a + b.amount, 0);
     
-    // Balance real disponible = (Ingresos - Gastos) - Inversiones Congeladas
-    // Porque las inversiones ya salieron de la caja pero vuelven después
-    const balanceDisponible = ingresos - gastos - inversionesCongeladas;
+    // EFECTIVO EN CAJA del ciclo actual = Ingresos - Gastos
+    // (Las inversiones no están en este ciclo porque tienen status EN_CURSO)
+    const efectivoCicloActual = ingresos - gastos;
+    
+    // PATRIMONIO TOTAL = Efectivo del Ciclo + Inversiones Activas
+    // Las inversiones NO son pérdidas, son activos que se recuperarán
+    const patrimonioTotal = efectivoCicloActual + inversionesActivas;
     
     return { 
-      balance: balanceDisponible,  // Este es el que sale en el dashboard
-      inversionesCongeladas
+      efectivoEnCaja: efectivoCicloActual,  // Efectivo del ciclo actual
+      inversionesActivas,                    // Lo que está invertido (todos los ciclos)
+      patrimonioTotal                        // Total real del patrimonio
     };
   }, [movements, inversiones]);
 
@@ -43,12 +49,12 @@ const Dashboard: React.FC<DashboardProps> = ({ movements, inversiones, vault, on
   }, [vault]);
 
   const chartData = [
-    { name: 'P1', val: stats.balance * 0.4 },
-    { name: 'P2', val: stats.balance * 0.7 },
-    { name: 'P3', val: stats.balance * 0.5 },
-    { name: 'P4', val: stats.balance * 0.9 },
-    { name: 'P5', val: stats.balance * 0.8 },
-    { name: 'P6', val: stats.balance * 1.0 },
+    { name: 'P1', val: stats.patrimonioTotal * 0.4 },
+    { name: 'P2', val: stats.patrimonioTotal * 0.7 },
+    { name: 'P3', val: stats.patrimonioTotal * 0.5 },
+    { name: 'P4', val: stats.patrimonioTotal * 0.9 },
+    { name: 'P5', val: stats.patrimonioTotal * 0.8 },
+    { name: 'P6', val: stats.patrimonioTotal * 1.0 },
   ];
 
   return (
@@ -59,10 +65,13 @@ const Dashboard: React.FC<DashboardProps> = ({ movements, inversiones, vault, on
           <span className="material-symbols-outlined text-[4rem] sm:text-[8rem] md:text-[12rem]">account_balance</span>
         </div>
         <div className="relative z-10">
-          <p className="text-white/40 font-bold uppercase tracking-[0.4em] text-[8px] sm:text-[9px] md:text-[10px] mb-2 sm:mb-4">Balance en Sistema • Ciclo Actual</p>
+          <p className="text-white/40 font-bold uppercase tracking-[0.4em] text-[8px] sm:text-[9px] md:text-[10px] mb-2 sm:mb-4">Patrimonio Total • Ciclo Actual</p>
           <h3 className="text-3xl sm:text-5xl md:text-8xl font-serif font-bold italic tracking-tighter mustard-glow">
-            ${stats.balance.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+            ${stats.patrimonioTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}
           </h3>
+          <p className="text-white/50 text-[10px] sm:text-xs mt-2 sm:mt-4 font-medium">
+            Efectivo: ${stats.efectivoEnCaja.toLocaleString()} + Inversiones: ${stats.inversionesActivas.toLocaleString()}
+          </p>
         </div>
         <div className="mt-4 sm:mt-8 md:mt-12 h-24 sm:h-32 md:h-44 w-full relative z-10">
           <ResponsiveContainer width="100%" height="100%">
@@ -83,11 +92,11 @@ const Dashboard: React.FC<DashboardProps> = ({ movements, inversiones, vault, on
       <div className="flex flex-col gap-4 sm:gap-6 md:gap-8">
         <div className="glass rounded-xl sm:rounded-2xl md:rounded-[32px] p-5 sm:p-8 md:p-10 text-white shadow-glass-panel flex-1 border-t border-white/20">
           <p className="text-white/40 font-bold uppercase tracking-[0.4em] text-[8px] sm:text-[9px] md:text-[10px] mb-2 sm:mb-3">Inversiones Activas</p>
-          <h3 className="text-2xl sm:text-3xl md:text-5xl font-serif font-bold italic mb-4 sm:mb-8 text-mustard tracking-tight">${stats.inversionesCongeladas.toLocaleString()}</h3>
+          <h3 className="text-2xl sm:text-3xl md:text-5xl font-serif font-bold italic mb-4 sm:mb-8 text-mustard tracking-tight">${stats.inversionesActivas.toLocaleString()}</h3>
           <div className="space-y-3 sm:space-y-5 pt-3 sm:pt-6 border-t border-white/10 text-[8px] sm:text-[10px] uppercase tracking-[0.3em] font-bold opacity-50">
              <div className="flex justify-between items-center">
-                <span>Riesgo</span>
-                <span className="text-green-400">Controlado</span>
+                <span>Estado</span>
+                <span className="text-blue-400">Activo</span>
              </div>
              <div className="flex justify-between items-center">
                 <span>Vigilancia</span>
@@ -110,8 +119,8 @@ const Dashboard: React.FC<DashboardProps> = ({ movements, inversiones, vault, on
       <div className="lg:col-span-3 glass rounded-xl sm:rounded-2xl md:rounded-[32px] p-4 sm:p-8 md:p-10 flex flex-col md:flex-row items-center justify-between gap-4 sm:gap-8 md:gap-12 border-t border-white/20 shadow-glass-panel">
         <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-16 w-full md:w-auto">
            <div>
-              <p className="text-white/40 text-[8px] sm:text-[10px] uppercase font-bold tracking-[0.4em] mb-1 sm:mb-2">Libros YuJo</p>
-              <p className="text-white text-2xl sm:text-3xl md:text-4xl font-serif italic font-bold tracking-tight">${stats.balance.toLocaleString()}</p>
+              <p className="text-white/40 text-[8px] sm:text-[10px] uppercase font-bold tracking-[0.4em] mb-1 sm:mb-2">Efectivo en Caja (Sistema)</p>
+              <p className="text-white text-2xl sm:text-3xl md:text-4xl font-serif italic font-bold tracking-tight">${stats.efectivoEnCaja.toLocaleString()}</p>
            </div>
            <div className="h-12 sm:h-16 w-px bg-white/10 hidden sm:block"></div>
            <div>
@@ -128,7 +137,7 @@ const Dashboard: React.FC<DashboardProps> = ({ movements, inversiones, vault, on
             Sellar Bóveda
           </button>
           
-          {Math.abs(stats.balance - physicalTotal) < 0.01 ? (
+          {Math.abs(stats.efectivoEnCaja - physicalTotal) < 0.01 ? (
              <div className="bg-mustard/20 text-mustard px-4 sm:px-10 py-3 sm:py-5 rounded-lg sm:rounded-2xl flex items-center gap-2 sm:gap-3 font-bold border border-mustard/30 uppercase text-[8px] sm:text-[10px] tracking-[0.3em] shadow-lg shadow-mustard/10">
                 <span className="material-symbols-outlined text-sm sm:text-lg">verified</span>
                 <span className="hidden sm:inline">Cuadre Perfecto</span>

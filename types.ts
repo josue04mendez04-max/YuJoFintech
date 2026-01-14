@@ -41,6 +41,12 @@ export interface Inversion {
   status: InversionStatus;
   notas?: string;
   timestamp?: string;
+  /** Total amount returned from the investment */
+  montoRetorno?: number;
+  /** Profit/loss calculated as (montoRetorno - initial amount). Negative values indicate losses. */
+  ganancia?: number;
+  /** Date when the investment return was completed */
+  fechaRetorno?: string;
 }
 
 export interface VaultCount {

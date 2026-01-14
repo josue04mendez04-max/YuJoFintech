@@ -26,7 +26,7 @@ const Registry: React.FC<RegistryProps> = ({ movements, onSave, onEdit, onDelete
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const newMovement: Movement = {
-      id: `YJ-${Math.random().toString(36).substr(2, 6).toUpperCase()}`,
+      id: `YJ-${Math.random().toString(36).substring(2, 8).toUpperCase()}`,
       type: formData.type,
       amount: parseFloat(formData.amount),
       description: formData.description,
