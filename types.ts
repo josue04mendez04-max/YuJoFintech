@@ -38,9 +38,11 @@ export interface Inversion {
   responsable: string;
   fechaInicio: string;
   fechaEstimadaRetorno?: string;
+  fechaPromesaRetorno?: string; // Fecha prometida de retorno para alertas
   status: InversionStatus;
   notas?: string;
   timestamp?: string;
+  montoRetornado?: number; // Monto total retornado para cálculo de ROI
 }
 
 export interface VaultCount {

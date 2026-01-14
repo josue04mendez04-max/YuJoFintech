@@ -92,22 +92,28 @@ const CorteDeCaja: React.FC<CorteDeCajaProps> = ({ movements, physicalTotal, onC
           </div>
         </div>
 
-        {/* Patrimonio */}
+        {/* Patrimonio - Enhanced with Smart Breakdown */}
         <div className="mb-8 sm:mb-10 p-4 sm:p-6 bg-white/5 rounded-lg sm:rounded-2xl border border-white/10">
-          <p className="text-white/40 text-[8px] sm:text-[10px] uppercase font-bold tracking-widest mb-4">Posición de Activos (Patrimonio)</p>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div>
-              <p className="text-white/60 text-[9px] sm:text-[10px] uppercase font-bold mb-2">Efectivo Disponible</p>
-              <p className="text-white text-xl sm:text-2xl font-serif font-bold">${conciliacion.patrimonio.efectivoDisponible.toLocaleString()}</p>
+          <p className="text-white/40 text-[8px] sm:text-[10px] uppercase font-bold tracking-widest mb-4">Desglose Inteligente • Posición de Activos</p>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+            <div className="p-3 sm:p-4 bg-cyan-500/10 rounded-lg border border-cyan-500/20">
+              <p className="text-cyan-400/70 text-[9px] sm:text-[10px] uppercase font-bold mb-2">💵 Efectivo Físico Esperado</p>
+              <p className="text-cyan-300 text-xl sm:text-2xl font-serif font-bold">${conciliacion.patrimonio.efectivoDisponible.toLocaleString()}</p>
+              <p className="text-cyan-400/50 text-[7px] sm:text-[8px] mt-1">Lo que deberías tener en el cajón</p>
             </div>
-            <div>
-              <p className="text-white/60 text-[9px] sm:text-[10px] uppercase font-bold mb-2">En Inversiones</p>
+            <div className="p-3 sm:p-4 bg-amber-500/10 rounded-lg border border-amber-500/20">
+              <p className="text-amber-400/70 text-[9px] sm:text-[10px] uppercase font-bold mb-2">🔄 Capital en Movimiento</p>
               <p className="text-amber-300 text-xl sm:text-2xl font-serif font-bold">${conciliacion.patrimonio.inversionesActivas.toLocaleString()}</p>
+              <p className="text-amber-400/50 text-[7px] sm:text-[8px] mt-1">Dinero prestado/invertido activo</p>
             </div>
             <div className="p-3 sm:p-4 bg-mustard/20 rounded-lg border border-mustard/30">
-              <p className="text-mustard/70 text-[9px] sm:text-[10px] uppercase font-bold mb-2">Capital Total</p>
+              <p className="text-mustard/70 text-[9px] sm:text-[10px] uppercase font-bold mb-2">🏢 Patrimonio Total</p>
               <p className="text-white text-xl sm:text-2xl font-serif font-bold">${conciliacion.patrimonio.capitalTotal.toLocaleString()}</p>
+              <p className="text-mustard/50 text-[7px] sm:text-[8px] mt-1">Suma de efectivo + inversiones</p>
             </div>
+          </div>
+          <div className="text-center text-white/30 text-[7px] sm:text-[8px] italic pt-3 border-t border-white/5">
+            ✓ Esto evita el estrés de pensar que falta dinero cuando haces el corte diario
           </div>
         </div>
 

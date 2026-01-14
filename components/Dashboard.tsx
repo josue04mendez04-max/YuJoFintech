@@ -28,9 +28,23 @@ const Dashboard: React.FC<DashboardProps> = ({ movements, inversiones, vault, on
     // Porque las inversiones ya salieron de la caja pero vuelven después
     const balanceDisponible = ingresos - gastos - inversionesCongeladas;
     
+    // Cálculo de ROI para inversiones completadas
+    const inversionesCompletadas = inversiones.filter(i => i.status === 'COMPLETADA' && i.montoRetornado);
+    const totalInvertido = inversionesCompletadas.reduce((a, b) => a + b.monto, 0);
+    const totalRetornado = inversionesCompletadas.reduce((a, b) => a + (b.montoRetornado || 0), 0);
+    const gananciaTotal = totalRetornado - totalInvertido;
+    const roiPorcentaje = totalInvertido > 0 ? ((gananciaTotal / totalInvertido) * 100) : 0;
+    
     return { 
       balance: balanceDisponible,  // Este es el que sale en el dashboard
-      inversionesCongeladas
+      inversionesCongeladas,
+      roi: {
+        porcentaje: roiPorcentaje,
+        gananciaTotal,
+        totalInvertido,
+        totalRetornado,
+        cantidadInversiones: inversionesCompletadas.length
+      }
     };
   }, [movements, inversiones]);
 
@@ -95,6 +109,40 @@ const Dashboard: React.FC<DashboardProps> = ({ movements, inversiones, vault, on
              </div>
           </div>
         </div>
+
+        {/* ROI Card - Utilidad por Inversión */}
+        {stats.roi.cantidadInversiones > 0 && (
+          <div className="glass rounded-xl sm:rounded-2xl md:rounded-[32px] p-5 sm:p-8 md:p-10 text-white shadow-glass-panel border-t border-green-500/20">
+            <p className="text-white/40 font-bold uppercase tracking-[0.4em] text-[8px] sm:text-[9px] md:text-[10px] mb-2 sm:mb-3">Utilidad por Inversión</p>
+            <div className="flex items-baseline gap-2 mb-4 sm:mb-6">
+              <h3 className={`text-2xl sm:text-3xl md:text-4xl font-serif font-bold italic tracking-tight ${
+                stats.roi.porcentaje >= 0 ? 'text-green-400' : 'text-red-400'
+              }`}>
+                {stats.roi.porcentaje >= 0 ? '+' : ''}{stats.roi.porcentaje.toFixed(1)}%
+              </h3>
+              <span className="text-white/40 text-[8px] sm:text-[10px] uppercase font-bold">ROI</span>
+            </div>
+            <div className="space-y-2 sm:space-y-3 pt-3 sm:pt-4 border-t border-white/10 text-[8px] sm:text-[10px]">
+              <div className="flex justify-between items-center text-white/60">
+                <span>Invertido</span>
+                <span className="font-serif text-white">${stats.roi.totalInvertido.toLocaleString()}</span>
+              </div>
+              <div className="flex justify-between items-center text-white/60">
+                <span>Retornado</span>
+                <span className="font-serif text-green-300">${stats.roi.totalRetornado.toLocaleString()}</span>
+              </div>
+              <div className="flex justify-between items-center text-white/60 pt-2 border-t border-white/5">
+                <span className="uppercase font-bold">Ganancia</span>
+                <span className={`font-serif font-bold ${stats.roi.gananciaTotal >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                  ${Math.abs(stats.roi.gananciaTotal).toLocaleString()}
+                </span>
+              </div>
+              <div className="text-center text-white/30 text-[7px] sm:text-[8px] pt-2">
+                {stats.roi.cantidadInversiones} {stats.roi.cantidadInversiones === 1 ? 'inversión completada' : 'inversiones completadas'}
+              </div>
+            </div>
+          </div>
+        )}
 
         <button 
           onClick={onPerformCut}

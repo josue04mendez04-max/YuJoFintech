@@ -1,15 +1,16 @@
 
 import React from 'react';
-import { Movement, MovementType, MovementStatus } from '../types';
+import { Movement, MovementType, MovementStatus, Inversion } from '../types';
 
 interface HistoryProps {
   movements: Movement[];
+  inversiones: Inversion[];
   onEdit: (id: string) => void;
   onDelete: (id: string) => void;
   onPrint: (movement: Movement) => void;
 }
 
-const History: React.FC<HistoryProps> = ({ movements, onEdit, onDelete, onPrint }) => {
+const History: React.FC<HistoryProps> = ({ movements, inversiones, onEdit, onDelete, onPrint }) => {
   const getStatusBadge = (status: MovementStatus) => {
     switch (status) {
       case MovementStatus.PENDIENTE_CORTE: return 'bg-blue-500/20 text-blue-400 border-blue-500/30';
@@ -23,6 +24,27 @@ const History: React.FC<HistoryProps> = ({ movements, onEdit, onDelete, onPrint 
     if (type === MovementType.INGRESO) return 'text-green-400';
     if (type === MovementType.GASTO) return 'text-red-400';
     return 'text-mustard';
+  };
+
+  // Función para determinar si una inversión está vencida
+  const isInversionOverdue = (movement: Movement): boolean => {
+    if (movement.type !== MovementType.INVERSION || movement.status !== MovementStatus.EN_CURSO) {
+      return false;
+    }
+    
+    // Buscar la inversión correspondiente por descripción o fecha
+    const inversion = inversiones.find(inv => 
+      inv.descripcion === movement.description && 
+      inv.status !== 'COMPLETADA'
+    );
+    
+    if (!inversion?.fechaPromesaRetorno) {
+      return false;
+    }
+    
+    const today = new Date();
+    const promiseDate = new Date(inversion.fechaPromesaRetorno);
+    return today > promiseDate;
   };
 
   return (
@@ -50,11 +72,16 @@ const History: React.FC<HistoryProps> = ({ movements, onEdit, onDelete, onPrint 
                <tr>
                   <td colSpan={7} className="py-12 sm:py-20 text-center text-white/30 italic font-serif text-sm sm:text-lg">Sin registros aún.</td>
                </tr>
-            ) : movements.map((m) => (
-              <tr key={m.id} className="group hover:bg-white/5 transition-all">
+            ) : movements.map((m) => {
+              const isOverdue = isInversionOverdue(m);
+              return (
+              <tr key={m.id} className={`group hover:bg-white/5 transition-all ${isOverdue ? 'bg-red-500/10 border-l-4 border-red-500' : ''}`}>
                 <td className="py-3 sm:py-4 px-3 sm:px-4 text-white/30 font-mono text-[8px] sm:text-[10px] uppercase">{m.id}</td>
                 <td className="py-3 sm:py-4 px-3 sm:px-4 whitespace-nowrap text-xs sm:text-sm">{m.date}</td>
-                <td className="py-3 sm:py-4 px-3 sm:px-4 max-w-[150px] sm:max-w-xs truncate text-xs sm:text-sm">{m.description}</td>
+                <td className="py-3 sm:py-4 px-3 sm:px-4 max-w-[150px] sm:max-w-xs truncate text-xs sm:text-sm">
+                  {isOverdue && <span className="material-symbols-outlined text-red-400 text-xs inline-block mr-1" title="Fecha de retorno vencida">warning</span>}
+                  {m.description}
+                </td>
                 <td className={`py-3 sm:py-4 px-3 sm:px-4 text-xs sm:text-sm font-bold ${getTypeLabel(m.type)}`}>
                   {m.type}
                 </td>
@@ -63,7 +90,7 @@ const History: React.FC<HistoryProps> = ({ movements, onEdit, onDelete, onPrint 
                     {m.status.replace('_', ' ')}
                   </span>
                 </td>
-                <td className="py-3 sm:py-4 px-3 sm:px-4 text-right font-serif italic text-sm sm:text-lg">
+                <td className={`py-3 sm:py-4 px-3 sm:px-4 text-right font-serif italic text-sm sm:text-lg ${isOverdue ? 'text-red-400 font-bold' : ''}`}>
                   ${m.amount.toLocaleString(undefined, { minimumFractionDigits: 0 })}
                 </td>
                 <td className="py-3 sm:py-4 px-3 sm:px-4 text-center">
@@ -92,7 +119,8 @@ const History: React.FC<HistoryProps> = ({ movements, onEdit, onDelete, onPrint 
                   </div>
                 </td>
               </tr>
-            ))}
+            )}
+            )}
           </tbody>
         </table>
       </div>

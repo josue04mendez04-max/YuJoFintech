@@ -1,9 +1,10 @@
 
 import React, { useState } from 'react';
-import { Movement, MovementType, MovementStatus } from '../types';
+import { Movement, MovementType, MovementStatus, Inversion } from '../types';
 
 interface RegistryProps {
   movements: Movement[];
+  inversiones: Inversion[];
   onSave: (m: Movement) => void;
   onEdit: (id: string) => void;
   onDelete: (id: string) => void;
@@ -11,7 +12,7 @@ interface RegistryProps {
   onReturnInvestment: (m: Movement) => void;
 }
 
-const Registry: React.FC<RegistryProps> = ({ movements, onSave, onEdit, onDelete, onPrint, onReturnInvestment }) => {
+const Registry: React.FC<RegistryProps> = ({ movements, inversiones, onSave, onEdit, onDelete, onPrint, onReturnInvestment }) => {
   const [formData, setFormData] = useState({
     type: MovementType.INGRESO,
     amount: '',
@@ -22,6 +23,27 @@ const Registry: React.FC<RegistryProps> = ({ movements, onSave, onEdit, onDelete
   });
 
   const activeMovements = movements.filter(m => m.status !== MovementStatus.ARCHIVADO);
+
+  // Función para determinar si una inversión está vencida
+  const isInversionOverdue = (movement: Movement): boolean => {
+    if (movement.type !== MovementType.INVERSION || movement.status !== MovementStatus.EN_CURSO) {
+      return false;
+    }
+    
+    // Buscar la inversión correspondiente por descripción
+    const inversion = inversiones.find(inv => 
+      inv.descripcion === movement.description && 
+      inv.status !== 'COMPLETADA'
+    );
+    
+    if (!inversion?.fechaPromesaRetorno) {
+      return false;
+    }
+    
+    const today = new Date();
+    const promiseDate = new Date(inversion.fechaPromesaRetorno);
+    return today > promiseDate;
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -149,29 +171,54 @@ const Registry: React.FC<RegistryProps> = ({ movements, onSave, onEdit, onDelete
                   <td colSpan={5} className="py-16 sm:py-32 text-center text-white/10 italic font-serif text-lg sm:text-2xl tracking-[0.2em]">Cámara Vacía</td>
                 </tr>
               ) : (
-                activeMovements.map((m) => (
-                  <tr key={m.id} className="group hover:bg-white/5 transition-all">
+                activeMovements.map((m) => {
+                  const isOverdue = isInversionOverdue(m);
+                  return (
+                  <tr key={m.id} className={`group hover:bg-white/5 transition-all ${isOverdue ? 'bg-red-500/10 border-l-4 border-red-500' : ''}`}>
                     <td className="py-3 sm:py-6 px-3 sm:px-6 font-mono text-[8px] sm:text-[10px] text-white/20">{m.id}</td>
                     <td className="py-3 sm:py-6 px-3 sm:px-6 text-xs sm:text-sm font-medium tracking-tight uppercase hidden sm:table-cell">{m.responsible}</td>
                     <td className="py-3 sm:py-6 px-3 sm:px-6">
-                      <p className="text-xs sm:text-sm truncate max-w-[150px] sm:max-w-[250px] font-medium">{m.description}</p>
-                      <p className="text-[8px] sm:text-[9px] text-white/20 uppercase font-bold mt-1 tracking-widest hidden sm:block">{m.date}</p>
+                      <div className="flex items-center gap-2">
+                        {isOverdue && (
+                          <span className="material-symbols-outlined text-red-400 text-sm animate-pulse" title="¡Fecha de retorno vencida!">
+                            warning
+                          </span>
+                        )}
+                        <div>
+                          <p className="text-xs sm:text-sm truncate max-w-[150px] sm:max-w-[250px] font-medium">{m.description}</p>
+                          <p className="text-[8px] sm:text-[9px] text-white/20 uppercase font-bold mt-1 tracking-widest hidden sm:block">{m.date}</p>
+                        </div>
+                      </div>
                     </td>
-                    <td className={`py-3 sm:py-6 px-3 sm:px-6 text-right font-serif italic font-bold text-sm sm:text-xl ${m.type === MovementType.INGRESO ? 'text-green-400' : m.type === MovementType.GASTO ? 'text-red-400' : 'text-mustard'}`}>
+                    <td className={`py-3 sm:py-6 px-3 sm:px-6 text-right font-serif italic font-bold text-sm sm:text-xl ${
+                      isOverdue ? 'text-red-400' : 
+                      m.type === MovementType.INGRESO ? 'text-green-400' : 
+                      m.type === MovementType.GASTO ? 'text-red-400' : 
+                      'text-mustard'
+                    }`}>
                       {m.type === MovementType.GASTO ? '-' : ''}${m.amount.toLocaleString(undefined, { minimumFractionDigits: 0 })}
                     </td>
                     <td className="py-3 sm:py-6 px-3 sm:px-6">
                       <div className="flex justify-center gap-2">
                         <button onClick={() => onPrint(m)} title="Imprimir" className="w-8 sm:w-10 h-8 sm:h-10 flex items-center justify-center rounded-lg sm:rounded-xl bg-white/5 text-white/30 hover:text-mustard hover:bg-mustard/10 transition-all"><span className="material-symbols-outlined text-sm sm:text-base">print</span></button>
                         {m.type === MovementType.INVERSION && (
-                           <button onClick={() => onReturnInvestment(m)} title="Devolver" className="w-8 sm:w-10 h-8 sm:h-10 flex items-center justify-center rounded-lg sm:rounded-xl bg-mustard/20 text-mustard hover:scale-110 shadow-lg shadow-mustard/20 transition-all hidden sm:flex"><span className="material-symbols-outlined text-sm sm:text-base font-bold">keyboard_return</span></button>
+                           <button 
+                             onClick={() => onReturnInvestment(m)} 
+                             title={isOverdue ? "¡Retorno vencido! Marcar como devuelto" : "Devolver"} 
+                             className={`w-8 sm:w-10 h-8 sm:h-10 flex items-center justify-center rounded-lg sm:rounded-xl ${
+                               isOverdue 
+                                 ? 'bg-red-500/20 text-red-400 hover:scale-110 animate-pulse' 
+                                 : 'bg-mustard/20 text-mustard hover:scale-110'
+                             } shadow-lg transition-all hidden sm:flex`}>
+                             <span className="material-symbols-outlined text-sm sm:text-base font-bold">keyboard_return</span>
+                           </button>
                         )}
                         <button onClick={() => onEdit(m.id)} className="w-8 sm:w-10 h-8 sm:h-10 flex items-center justify-center rounded-lg sm:rounded-xl bg-white/5 text-white/20 hover:text-white transition-all hidden sm:flex"><span className="material-symbols-outlined text-sm sm:text-base">edit</span></button>
                         <button onClick={() => onDelete(m.id)} className="w-8 sm:w-10 h-8 sm:h-10 flex items-center justify-center rounded-lg sm:rounded-xl bg-white/5 text-white/20 hover:text-red-400 transition-all hidden sm:flex"><span className="material-symbols-outlined text-sm sm:text-base">delete</span></button>
                       </div>
                     </td>
                   </tr>
-                ))
+                )})
               )}
             </tbody>
           </table>
