@@ -112,15 +112,18 @@ const App: React.FC = () => {
   };
 
   const handleReturnInvestment = async (m: Movement) => {
-    const amountStr = prompt(`Retorno de inversión: ${m.description}\nJosué, ingresa el monto total recibido:`, m.amount.toString());
+    const amountStr = prompt(`Retorno de inversión: ${m.description}\nMonto original: $${m.amount.toLocaleString()}\n\nIngresa el monto total recibido (incluyendo ganancia):`, m.amount.toString());
     if (amountStr && !isNaN(parseFloat(amountStr))) {
-      const amount = parseFloat(amountStr);
+      const montoRetorno = parseFloat(amountStr);
+      const ganancia = montoRetorno - m.amount;
+      
+      // Crear movimiento de retorno del capital
       const returnMovement: Movement = {
         id: `RET-${Math.random().toString(36).substr(2, 5).toUpperCase()}`,
         type: MovementType.INGRESO,
         category: 'Inversión Retornada',
-        amount: amount,
-        description: `RETORNO: ${m.description}`,
+        amount: montoRetorno,
+        description: `RETORNO: ${m.description} (Capital: $${m.amount.toLocaleString()}, Ganancia: $${ganancia.toLocaleString()})`,
         responsible: "Sistema / Retorno",
         authorization: 'Josué M.',
         date: new Date().toISOString().split('T')[0],
@@ -139,7 +142,13 @@ const App: React.FC = () => {
         console.error("Fallo al registrar retorno en Firebase", err);
       }
 
-      alert("Inversión retornada con éxito.");
+      if (ganancia > 0) {
+        alert(`¡Inversión retornada con éxito!\n\nCapital recuperado: $${m.amount.toLocaleString()}\nGanancia obtenida: $${ganancia.toLocaleString()}\nTotal recibido: $${montoRetorno.toLocaleString()}`);
+      } else if (ganancia < 0) {
+        alert(`Inversión retornada.\n\nCapital original: $${m.amount.toLocaleString()}\nPérdida: $${Math.abs(ganancia).toLocaleString()}\nTotal recibido: $${montoRetorno.toLocaleString()}`);
+      } else {
+        alert(`Inversión retornada sin ganancia ni pérdida.\n\nMonto: $${montoRetorno.toLocaleString()}`);
+      }
     }
   };
 

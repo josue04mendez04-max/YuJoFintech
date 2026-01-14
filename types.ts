@@ -41,6 +41,10 @@ export interface Inversion {
   status: InversionStatus;
   notas?: string;
   timestamp?: string;
+  // Campos para retorno de inversión
+  montoRetorno?: number; // Monto total devuelto
+  ganancia?: number; // Ganancia calculada (montoRetorno - monto inicial)
+  fechaRetorno?: string; // Fecha en que se completó el retorno
 }
 
 export interface VaultCount {
