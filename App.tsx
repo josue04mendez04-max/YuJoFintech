@@ -116,6 +116,10 @@ const App: React.FC = () => {
     if (amountStr && !isNaN(parseFloat(amountStr))) {
       const montoRetorno = parseFloat(amountStr);
       const ganancia = montoRetorno - m.amount;
+      const esGanancia = ganancia >= 0;
+      const gananciaPerdidaTexto = esGanancia 
+        ? `Ganancia: $${ganancia.toLocaleString()}`
+        : `Pérdida: $${Math.abs(ganancia).toLocaleString()}`;
       
       // Crear movimiento de retorno del capital
       const returnMovement: Movement = {
@@ -123,7 +127,7 @@ const App: React.FC = () => {
         type: MovementType.INGRESO,
         category: 'Inversión Retornada',
         amount: montoRetorno,
-        description: `RETORNO: ${m.description} (Capital: $${m.amount.toLocaleString()}, Ganancia: $${ganancia.toLocaleString()})`,
+        description: `RETORNO: ${m.description} (Capital: $${m.amount.toLocaleString()}, ${gananciaPerdidaTexto})`,
         responsible: "Sistema / Retorno",
         authorization: 'Josué M.',
         date: new Date().toISOString().split('T')[0],

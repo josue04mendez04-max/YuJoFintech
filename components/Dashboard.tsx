@@ -13,27 +13,30 @@ interface DashboardProps {
 
 const Dashboard: React.FC<DashboardProps> = ({ movements, inversiones, vault, onOpenVault, onPerformCut }) => {
   const stats = useMemo(() => {
-    // Balance del ciclo: Solo lo que no ha sido cortado
+    // Movimientos del ciclo actual (pendientes de corte)
     const activeCycle = movements.filter(m => m.status === MovementStatus.PENDIENTE_CORTE);
     const ingresos = activeCycle.filter(m => m.type === MovementType.INGRESO).reduce((a, b) => a + b.amount, 0);
     const gastos = activeCycle.filter(m => m.type === MovementType.GASTO).reduce((a, b) => a + b.amount, 0);
     
-    // Inversiones ACTIVAS: dinero que salió pero volverá (status EN_CURSO en movements)
+    // Inversiones ACTIVAS: dinero invertido que persiste entre ciclos (status EN_CURSO)
+    // Nota: Las inversiones se crean directamente con status EN_CURSO, no pasan por PENDIENTE_CORTE
+    // Por eso no afectan los cálculos de ingresos/gastos del ciclo actual
     const inversionesActivas = movements
-      .filter(m => m.status === MovementStatus.EN_CURSO)
+      .filter(m => m.type === MovementType.INVERSION && m.status === MovementStatus.EN_CURSO)
       .reduce((a, b) => a + b.amount, 0);
     
-    // EFECTIVO EN CAJA = Ingresos - Gastos - Inversiones (dinero físicamente disponible)
-    const efectivoEnCaja = ingresos - gastos - inversionesActivas;
+    // EFECTIVO EN CAJA del ciclo actual = Ingresos - Gastos
+    // (Las inversiones no están en este ciclo porque tienen status EN_CURSO)
+    const efectivoCicloActual = ingresos - gastos;
     
-    // PATRIMONIO TOTAL = Efectivo + Inversiones Activas (el verdadero balance)
+    // PATRIMONIO TOTAL = Efectivo del Ciclo + Inversiones Activas
     // Las inversiones NO son pérdidas, son activos que se recuperarán
-    const patrimonioTotal = efectivoEnCaja + inversionesActivas;
+    const patrimonioTotal = efectivoCicloActual + inversionesActivas;
     
     return { 
-      efectivoEnCaja,          // Lo que está físicamente en la caja
-      inversionesActivas,      // Lo que está invertido (recuperable)
-      patrimonioTotal          // Total real del patrimonio (efectivo + inversiones)
+      efectivoEnCaja: efectivoCicloActual,  // Efectivo del ciclo actual
+      inversionesActivas,                    // Lo que está invertido (todos los ciclos)
+      patrimonioTotal                        // Total real del patrimonio
     };
   }, [movements, inversiones]);
 

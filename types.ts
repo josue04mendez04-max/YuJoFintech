@@ -43,7 +43,7 @@ export interface Inversion {
   timestamp?: string;
   /** Total amount returned from the investment */
   montoRetorno?: number;
-  /** Profit calculated as (montoRetorno - initial amount) */
+  /** Profit/loss calculated as (montoRetorno - initial amount). Negative values indicate losses. */
   ganancia?: number;
   /** Date when the investment return was completed */
   fechaRetorno?: string;
