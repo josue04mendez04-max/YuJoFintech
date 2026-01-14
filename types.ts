@@ -33,11 +33,14 @@ export interface Movement {
 export interface Inversion {
   id: string;
   monto: number;
+  montoRetornado?: number; // Monto original + ganancia
+  ganancia?: number; // Ganancia calculada automáticamente
   descripcion: string;
   tipo: 'Proyecto' | 'Compra' | 'Mejora' | 'Otro';
   responsable: string;
   fechaInicio: string;
   fechaEstimadaRetorno?: string;
+  fechaRetornoReal?: string; // Fecha cuando se registró el retorno
   status: InversionStatus;
   notas?: string;
   timestamp?: string;
