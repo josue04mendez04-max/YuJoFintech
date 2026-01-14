@@ -87,7 +87,7 @@ const CorteDeCaja: React.FC<CorteDeCajaProps> = ({ movements, physicalTotal, onC
           </div>
         </div>
 
-        {/* Patrimonio */}
+        {/* Patrimonio - Enhanced with Smart Breakdown */}
         <div className="mb-8 sm:mb-10 p-4 sm:p-6 bg-white/5 rounded-lg sm:rounded-2xl border border-white/10">
           <p className="text-white/40 text-[8px] sm:text-[10px] uppercase font-bold tracking-widest mb-4">Posición de Activos</p>
           <div className="grid grid-cols-1 sm:grid-cols-1 gap-4">
@@ -95,6 +95,9 @@ const CorteDeCaja: React.FC<CorteDeCajaProps> = ({ movements, physicalTotal, onC
               <p className="text-mustard/70 text-[9px] sm:text-[10px] uppercase font-bold mb-2">Efectivo Disponible</p>
               <p className="text-white text-xl sm:text-2xl font-serif font-bold">${balanceCalculado.toLocaleString()}</p>
             </div>
+          </div>
+          <div className="text-center text-white/30 text-[7px] sm:text-[8px] italic pt-3 border-t border-white/5">
+            ✓ Esto evita el estrés de pensar que falta dinero cuando haces el corte diario
           </div>
         </div>
 
