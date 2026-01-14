@@ -1,6 +1,6 @@
 
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
-import { Movement, MovementType, MovementStatus, VaultCount, CorteSummary } from './types';
+import { Movement, MovementType, MovementStatus, VaultCount, CorteSummary, Inversion } from './types';
 import Dashboard from './components/Dashboard';
 import Registry from './components/Registry';
 import Vault from './components/Vault';
@@ -17,8 +17,9 @@ import * as ConciliacionService from './conciliacion.service';
 const App: React.FC = () => {
   const [view, setView] = useState<'dashboard' | 'notaria' | 'contabilidad' | 'corte' | 'historialCortes'>('dashboard');
   
-  // Estado de movimientos
+  // Estado de movimientos e inversiones
   const [movements, setMovements] = useState<Movement[]>([]);
+  const [inversiones, setInversiones] = useState<Inversion[]>([]);
   
   const [vault, setVault] = useState<VaultCount>({
     bills: { '1000': 0, '500': 0, '200': 0, '100': 0, '50': 0, '20': 0 },
@@ -57,10 +58,22 @@ const App: React.FC = () => {
     }
   }, []);
 
+  // Función para cargar inversiones
+  const fetchInversiones = useCallback(async () => {
+    try {
+      const data = await FirestoreService.fetchInversiones();
+      setInversiones(data);
+      console.log("YuJo: Inversiones cargadas exitosamente.");
+    } catch (err: any) {
+      console.error(`YuJo Inversiones Error:`, err);
+    }
+  }, []);
+
   // Sincronización al iniciar
   useEffect(() => {
     fetchMovements();
-  }, [fetchMovements]);
+    fetchInversiones();
+  }, [fetchMovements, fetchInversiones]);
 
   const physicalTotal = useMemo(() => {
     let t = 0;
@@ -147,7 +160,7 @@ const App: React.FC = () => {
     // Usar el servicio de conciliación para cálculos más robustos
     const conciliacion = ConciliacionService.calcularConciliacion({
       movements,
-      inversiones: [], // Se obtendría del estado real en una app completa
+      inversiones: inversiones, // Usar inversiones del estado
       physicalTotal,
       saldoInicial: 0 // Podría venir de un estado persistido
     });
@@ -258,7 +271,7 @@ const App: React.FC = () => {
             {view === 'dashboard' && (
               <Dashboard 
                 movements={movements}
-                inversiones={[]}
+                inversiones={inversiones}
                 vault={vault}
                 onOpenVault={() => setView('contabilidad')}
                 onPerformCut={() => setView('corte')}
@@ -268,6 +281,7 @@ const App: React.FC = () => {
             {view === 'notaria' && (
               <Registry 
                 movements={movements}
+                inversiones={inversiones}
                 onSave={addMovement} 
                 onEdit={editMovement}
                 onDelete={deleteMovement}

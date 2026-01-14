@@ -151,9 +151,11 @@ export const fetchInversiones = async (): Promise<Inversion[]> => {
         responsable: data.responsable,
         fechaInicio: data.fechaInicio,
         fechaEstimadaRetorno: data.fechaEstimadaRetorno,
+        fechaPromesaRetorno: data.fechaPromesaRetorno,
         status: data.status,
         notas: data.notas,
-        timestamp: data.timestamp
+        timestamp: data.timestamp,
+        montoRetornado: data.montoRetornado ? Number(data.montoRetornado) : undefined
       });
     });
     
@@ -201,9 +203,11 @@ export const listenToInversiones = (
         responsable: data.responsable,
         fechaInicio: data.fechaInicio,
         fechaEstimadaRetorno: data.fechaEstimadaRetorno,
+        fechaPromesaRetorno: data.fechaPromesaRetorno,
         status: data.status,
         notas: data.notas,
-        timestamp: data.timestamp
+        timestamp: data.timestamp,
+        montoRetornado: data.montoRetornado ? Number(data.montoRetornado) : undefined
       });
     });
     callback(inversiones);
