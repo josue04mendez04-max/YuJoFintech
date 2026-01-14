@@ -31,7 +31,7 @@ const CorteReceipt: React.FC<CorteReceiptProps> = ({ summary }) => {
         </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-2 mb-3 text-[7px]">
+      <div className="grid grid-cols-2 gap-2 mb-3 text-[7px]">
          <div className="p-2 bg-green-50 rounded text-center">
             <p className="uppercase font-bold text-green-600 mb-1">Ingresos</p>
             <p className="text-xs font-serif italic text-green-700 font-bold">${summary.ingresosTotal.toLocaleString()}</p>
@@ -39,10 +39,6 @@ const CorteReceipt: React.FC<CorteReceiptProps> = ({ summary }) => {
          <div className="p-2 bg-red-50 rounded text-center">
             <p className="uppercase font-bold text-red-600 mb-1">Egresos</p>
             <p className="text-xs font-serif italic text-red-700 font-bold">-${summary.egresosTotal.toLocaleString()}</p>
-         </div>
-         <div className="p-2 bg-amber-50 rounded text-center">
-            <p className="uppercase font-bold text-amber-600 mb-1">Inversiones</p>
-            <p className="text-xs font-serif italic text-amber-700 font-bold">-${summary.inversionesRealizadas.toLocaleString()}</p>
          </div>
       </div>
 
@@ -64,21 +60,13 @@ const CorteReceipt: React.FC<CorteReceiptProps> = ({ summary }) => {
          </div>
       </div>
 
-      {/* Patrimonio */}
+      {/* Efectivo Disponible */}
       <div className="bg-gray-50 border border-gray-200 p-2 rounded mb-3 text-[7px]">
          <p className="uppercase font-bold text-gray-600 mb-2 border-b border-gray-200 pb-1">Posición de Activos</p>
-         <div className="grid grid-cols-3 gap-1 text-[6px]">
-            <div>
-               <span className="text-gray-500">Efectivo:</span>
-               <p className="font-bold">${summary.patrimonio.efectivoDisponible.toLocaleString()}</p>
-            </div>
-            <div>
-               <span className="text-gray-500">Inversiones:</span>
-               <p className="font-bold">${summary.patrimonio.inversionesActivas.toLocaleString()}</p>
-            </div>
-            <div>
-               <span className="text-gray-500 font-bold">Capital Total:</span>
-               <p className="font-bold text-forest-green">${summary.patrimonio.capitalTotal.toLocaleString()}</p>
+         <div className="text-[6px]">
+            <div className="flex justify-between">
+               <span className="text-gray-500">Efectivo Disponible:</span>
+               <p className="font-bold text-forest-green">${summary.balanceCalculado.toLocaleString()}</p>
             </div>
          </div>
       </div>

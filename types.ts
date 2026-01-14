@@ -1,14 +1,9 @@
 
 export enum MovementType {
   INGRESO = 'INGRESO',
-  GASTO = 'GASTO',
-  INVERSION = 'INVERSION'
-}
-
-export enum InversionStatus {
-  ACTIVA = 'ACTIVA',
-  PENDIENTE_RETORNO = 'PENDIENTE_RETORNO',
-  COMPLETADA = 'COMPLETADA'
+  GASTO = 'GASTO'
+  // INVERSION deprecado - todos los préstamos ahora se registran como GASTO
+  // Los retornos de dinero se registran como INGRESO
 }
 
 export enum MovementStatus {
@@ -20,7 +15,7 @@ export enum MovementStatus {
 export interface Movement {
   id: string;
   type: MovementType;
-  category?: string; // Campo para compatibilidad con Sheets
+  category?: string; // Campo para categoría (ej: "Préstamo", "Venta", etc.)
   amount: number;
   description: string;
   responsible: string;
@@ -30,17 +25,14 @@ export interface Movement {
   cutId?: string; // ID vinculado al corte de caja
 }
 
-export interface Inversion {
-  id: string;
-  monto: number;
-  descripcion: string;
-  tipo: 'Proyecto' | 'Compra' | 'Mejora' | 'Otro';
-  responsable: string;
-  fechaInicio: string;
-  fechaEstimadaRetorno?: string;
-  status: InversionStatus;
-  notas?: string;
-  timestamp?: string;
+// DEPRECADO: Inversion ya no se usa. Los préstamos son GASTO, los retornos son INGRESO
+export interface Inversion extends Movement {
+  tasaInteres?: number;
+  plazoDias?: number;
+  fechaVencimiento?: string;
+  estado: 'ACTIVA' | 'LIQUIDADA';
+  montoRetornado?: number;
+  ganancia?: number;
 }
 
 export interface VaultCount {
@@ -57,24 +49,13 @@ export interface CorteSummary {
   // Flujo de efectivo
   ingresosTotal: number;
   egresosTotal: number;
-  inversionesRealizadas: number;
-  desinversionesRetornadas: number;
   
   // Cálculos derivados
-  balanceCalculado: number; // Saldo_Inicial + Ingresos - Egresos - Inversiones + Desinversiones
+  balanceCalculado: number; // Saldo_Inicial + Ingresos - Egresos
   conteoFisico: number;
   diferencia: number; // conteoFisico - balanceCalculado
   
-  // Patrimonio
-  patrimonio: {
-    efectivoDisponible: number; // balanceCalculado
-    inversionesActivas: number; // Total en inversiones activas
-    capitalTotal: number; // efectivo + inversiones
-  };
-  
   // Datos de auditoría
-  gastosTotal?: number; // Para compatibilidad
-  balanceSistema?: number; // Para compatibilidad
   movements: Movement[];
   
   // Ajustes si es necesario

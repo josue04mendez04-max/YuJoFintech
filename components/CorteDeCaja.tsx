@@ -28,7 +28,6 @@ const CorteDeCaja: React.FC<CorteDeCajaProps> = ({ movements, physicalTotal, onC
 
   const totalIngresos = conciliacion.ingresos;
   const totalEgresos = conciliacion.egresos;
-  const totalInversiones = conciliacion.inversionesRealizadas;
   const balanceCalculado = conciliacion.balanceCalculado;
   const diferencia = conciliacion.diferencia;
 
@@ -41,7 +40,7 @@ const CorteDeCaja: React.FC<CorteDeCajaProps> = ({ movements, physicalTotal, onC
         {/* Primera fila: Flujos de Efectivo */}
         <div className="mb-8 sm:mb-10">
           <p className="text-white/40 text-[8px] sm:text-[10px] uppercase font-bold tracking-widest mb-4">Flujo de Efectivo</p>
-          <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 sm:gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
             <div className="text-center p-3 sm:p-4 bg-green-500/10 rounded-lg sm:rounded-2xl border border-green-500/20">
               <p className="text-green-400 text-[9px] sm:text-[10px] uppercase font-bold mb-1 sm:mb-2">Ingresos</p>
               <p className="text-green-300 text-lg sm:text-2xl font-serif font-bold italic">${totalIngresos.toLocaleString()}</p>
@@ -49,10 +48,6 @@ const CorteDeCaja: React.FC<CorteDeCajaProps> = ({ movements, physicalTotal, onC
             <div className="text-center p-3 sm:p-4 bg-red-500/10 rounded-lg sm:rounded-2xl border border-red-500/20">
               <p className="text-red-400 text-[9px] sm:text-[10px] uppercase font-bold mb-1 sm:mb-2">Egresos</p>
               <p className="text-red-300 text-lg sm:text-2xl font-serif font-bold italic">${totalEgresos.toLocaleString()}</p>
-            </div>
-            <div className="text-center p-3 sm:p-4 bg-amber-500/10 rounded-lg sm:rounded-2xl border border-amber-500/20">
-              <p className="text-amber-400 text-[9px] sm:text-[10px] uppercase font-bold mb-1 sm:mb-2">Inversiones</p>
-              <p className="text-amber-300 text-lg sm:text-2xl font-serif font-bold italic">${totalInversiones.toLocaleString()}</p>
             </div>
             <div className="text-center p-3 sm:p-4 bg-mustard/10 rounded-lg sm:rounded-2xl border border-mustard/20">
               <p className="text-mustard/60 text-[9px] sm:text-[10px] uppercase font-bold mb-1 sm:mb-2">Balance Calc.</p>
@@ -94,19 +89,11 @@ const CorteDeCaja: React.FC<CorteDeCajaProps> = ({ movements, physicalTotal, onC
 
         {/* Patrimonio */}
         <div className="mb-8 sm:mb-10 p-4 sm:p-6 bg-white/5 rounded-lg sm:rounded-2xl border border-white/10">
-          <p className="text-white/40 text-[8px] sm:text-[10px] uppercase font-bold tracking-widest mb-4">Posición de Activos (Patrimonio)</p>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div>
-              <p className="text-white/60 text-[9px] sm:text-[10px] uppercase font-bold mb-2">Efectivo Disponible</p>
-              <p className="text-white text-xl sm:text-2xl font-serif font-bold">${conciliacion.patrimonio.efectivoDisponible.toLocaleString()}</p>
-            </div>
-            <div>
-              <p className="text-white/60 text-[9px] sm:text-[10px] uppercase font-bold mb-2">En Inversiones</p>
-              <p className="text-amber-300 text-xl sm:text-2xl font-serif font-bold">${conciliacion.patrimonio.inversionesActivas.toLocaleString()}</p>
-            </div>
+          <p className="text-white/40 text-[8px] sm:text-[10px] uppercase font-bold tracking-widest mb-4">Posición de Activos</p>
+          <div className="grid grid-cols-1 sm:grid-cols-1 gap-4">
             <div className="p-3 sm:p-4 bg-mustard/20 rounded-lg border border-mustard/30">
-              <p className="text-mustard/70 text-[9px] sm:text-[10px] uppercase font-bold mb-2">Capital Total</p>
-              <p className="text-white text-xl sm:text-2xl font-serif font-bold">${conciliacion.patrimonio.capitalTotal.toLocaleString()}</p>
+              <p className="text-mustard/70 text-[9px] sm:text-[10px] uppercase font-bold mb-2">Efectivo Disponible</p>
+              <p className="text-white text-xl sm:text-2xl font-serif font-bold">${balanceCalculado.toLocaleString()}</p>
             </div>
           </div>
         </div>
@@ -165,11 +152,9 @@ const CorteDeCaja: React.FC<CorteDeCajaProps> = ({ movements, physicalTotal, onC
                   </div>
                   <div className="flex flex-col items-end gap-1 flex-shrink-0">
                     <p className={`font-serif italic font-bold text-xs sm:text-sm ${
-                      m.type === MovementType.INGRESO ? 'text-green-400' : 
-                      m.type === MovementType.GASTO ? 'text-red-400' : 
-                      'text-amber-400'
+                      m.type === MovementType.INGRESO ? 'text-green-400' : 'text-red-400'
                     }`}>
-                      {m.type === MovementType.GASTO ? '-' : m.type === MovementType.INVERSION ? '→' : '+'}${m.amount.toLocaleString(undefined, { minimumFractionDigits: 0 })}
+                      {m.type === MovementType.GASTO ? '-' : '+'}${m.amount.toLocaleString(undefined, { minimumFractionDigits: 0 })}
                     </p>
                     <span className="text-[8px] text-white/20 uppercase">{m.type}</span>
                   </div>

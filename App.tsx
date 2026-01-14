@@ -258,7 +258,6 @@ const App: React.FC = () => {
             {view === 'dashboard' && (
               <Dashboard 
                 movements={movements}
-                inversiones={[]}
                 vault={vault}
                 onOpenVault={() => setView('contabilidad')}
                 onPerformCut={() => setView('corte')}

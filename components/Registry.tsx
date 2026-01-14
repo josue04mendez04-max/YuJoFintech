@@ -33,7 +33,7 @@ const Registry: React.FC<RegistryProps> = ({ movements, onSave, onEdit, onDelete
       responsible: formData.responsible || 'Invitado',
       authorization: formData.authorization,
       date: formData.date,
-      status: formData.type === MovementType.INVERSION ? MovementStatus.EN_CURSO : MovementStatus.PENDIENTE_CORTE
+      status: MovementStatus.PENDIENTE_CORTE
     };
     onSave(newMovement);
     setFormData({ ...formData, amount: '', description: '', responsible: '' });
@@ -54,7 +54,6 @@ const Registry: React.FC<RegistryProps> = ({ movements, onSave, onEdit, onDelete
             >
               <option value={MovementType.INGRESO}>Ingreso</option>
               <option value={MovementType.GASTO}>Egreso</option>
-              <option value={MovementType.INVERSION}>Inversión</option>
             </select>
           </div>
           
@@ -128,7 +127,6 @@ const Registry: React.FC<RegistryProps> = ({ movements, onSave, onEdit, onDelete
           <div className="hidden md:flex gap-6 text-[9px] font-bold uppercase tracking-widest text-white/40">
             <div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-green-400"></div> Ingresos</div>
             <div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-red-400"></div> Gastos</div>
-            <div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-mustard"></div> Inversiones</div>
           </div>
         </div>
 
@@ -157,15 +155,12 @@ const Registry: React.FC<RegistryProps> = ({ movements, onSave, onEdit, onDelete
                       <p className="text-xs sm:text-sm truncate max-w-[150px] sm:max-w-[250px] font-medium">{m.description}</p>
                       <p className="text-[8px] sm:text-[9px] text-white/20 uppercase font-bold mt-1 tracking-widest hidden sm:block">{m.date}</p>
                     </td>
-                    <td className={`py-3 sm:py-6 px-3 sm:px-6 text-right font-serif italic font-bold text-sm sm:text-xl ${m.type === MovementType.INGRESO ? 'text-green-400' : m.type === MovementType.GASTO ? 'text-red-400' : 'text-mustard'}`}>
+                    <td className={`py-3 sm:py-6 px-3 sm:px-6 text-right font-serif italic font-bold text-sm sm:text-xl ${m.type === MovementType.INGRESO ? 'text-green-400' : 'text-red-400'}`}>
                       {m.type === MovementType.GASTO ? '-' : ''}${m.amount.toLocaleString(undefined, { minimumFractionDigits: 0 })}
                     </td>
                     <td className="py-3 sm:py-6 px-3 sm:px-6">
                       <div className="flex justify-center gap-2">
                         <button onClick={() => onPrint(m)} title="Imprimir" className="w-8 sm:w-10 h-8 sm:h-10 flex items-center justify-center rounded-lg sm:rounded-xl bg-white/5 text-white/30 hover:text-mustard hover:bg-mustard/10 transition-all"><span className="material-symbols-outlined text-sm sm:text-base">print</span></button>
-                        {m.type === MovementType.INVERSION && (
-                           <button onClick={() => onReturnInvestment(m)} title="Devolver" className="w-8 sm:w-10 h-8 sm:h-10 flex items-center justify-center rounded-lg sm:rounded-xl bg-mustard/20 text-mustard hover:scale-110 shadow-lg shadow-mustard/20 transition-all hidden sm:flex"><span className="material-symbols-outlined text-sm sm:text-base font-bold">keyboard_return</span></button>
-                        )}
                         <button onClick={() => onEdit(m.id)} className="w-8 sm:w-10 h-8 sm:h-10 flex items-center justify-center rounded-lg sm:rounded-xl bg-white/5 text-white/20 hover:text-white transition-all hidden sm:flex"><span className="material-symbols-outlined text-sm sm:text-base">edit</span></button>
                         <button onClick={() => onDelete(m.id)} className="w-8 sm:w-10 h-8 sm:h-10 flex items-center justify-center rounded-lg sm:rounded-xl bg-white/5 text-white/20 hover:text-red-400 transition-all hidden sm:flex"><span className="material-symbols-outlined text-sm sm:text-base">delete</span></button>
                       </div>

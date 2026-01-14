@@ -14,7 +14,7 @@ import {
   Unsubscribe
 } from 'firebase/firestore';
 import { db } from './firebase.config';
-import { Movement, MovementStatus, Inversion } from './types';
+import { Movement, MovementStatus, MovementType, Inversion } from './types';
 
 // Collection name for this app
 const COLLECTION_NAME = 'yujofintech';
@@ -137,7 +137,7 @@ export const performCorte = async (
 export const fetchInversiones = async (): Promise<Inversion[]> => {
   try {
     const inversionesRef = collection(db, INVERSIONES_COLLECTION);
-    const q = query(inversionesRef, orderBy('fechaInicio', 'desc'));
+    const q = query(inversionesRef, orderBy('date', 'desc'));
     const querySnapshot = await getDocs(q);
     
     const inversiones: Inversion[] = [];
@@ -145,14 +145,21 @@ export const fetchInversiones = async (): Promise<Inversion[]> => {
       const data = doc.data();
       inversiones.push({
         id: doc.id,
-        monto: Number(data.monto),
-        descripcion: data.descripcion,
-        tipo: data.tipo,
-        responsable: data.responsable,
-        fechaInicio: data.fechaInicio,
-        fechaEstimadaRetorno: data.fechaEstimadaRetorno,
+        type: data.type || MovementType.INVERSION,
+        amount: Number(data.amount || data.monto),
+        description: data.description || data.descripcion,
+        category: data.category,
+        responsible: data.responsible,
+        authorization: data.authorization,
+        date: data.date || data.fechaInicio,
         status: data.status,
-        notas: data.notas,
+        cutId: data.cutId,
+        tasaInteres: data.tasaInteres,
+        plazoDias: data.plazoDias,
+        fechaVencimiento: data.fechaVencimiento,
+        estado: data.estado || 'ACTIVA',
+        montoRetornado: data.montoRetornado,
+        ganancia: data.ganancia,
         timestamp: data.timestamp
       });
     });
@@ -187,7 +194,7 @@ export const listenToInversiones = (
   callback: (inversiones: Inversion[]) => void
 ): Unsubscribe => {
   const inversionesRef = collection(db, INVERSIONES_COLLECTION);
-  const q = query(inversionesRef, orderBy('fechaInicio', 'desc'));
+  const q = query(inversionesRef, orderBy('date', 'desc'));
   
   return onSnapshot(q, (snapshot) => {
     const inversiones: Inversion[] = [];
@@ -195,14 +202,21 @@ export const listenToInversiones = (
       const data = doc.data();
       inversiones.push({
         id: doc.id,
-        monto: Number(data.monto),
-        descripcion: data.descripcion,
-        tipo: data.tipo,
-        responsable: data.responsable,
-        fechaInicio: data.fechaInicio,
-        fechaEstimadaRetorno: data.fechaEstimadaRetorno,
+        type: data.type || MovementType.INVERSION,
+        amount: Number(data.amount || data.monto),
+        description: data.description || data.descripcion,
+        category: data.category,
+        responsible: data.responsible,
+        authorization: data.authorization,
+        date: data.date || data.fechaInicio,
         status: data.status,
-        notas: data.notas,
+        cutId: data.cutId,
+        tasaInteres: data.tasaInteres,
+        plazoDias: data.plazoDias,
+        fechaVencimiento: data.fechaVencimiento,
+        estado: data.estado || 'ACTIVA',
+        montoRetornado: data.montoRetornado,
+        ganancia: data.ganancia,
         timestamp: data.timestamp
       });
     });
@@ -240,6 +254,46 @@ export const updateInversion = async (
     });
   } catch (error) {
     console.error('Error updating inversion in Firestore:', error);
+    throw error;
+  }
+};
+
+/**
+ * Liquidate an investment - mark as LIQUIDADA and create income movement
+ */
+export const liquidarInversion = async (
+  inversionId: string, 
+  montoOriginal: number, 
+  montoRecibido: number
+) => {
+  try {
+    const ganancia = montoRecibido - montoOriginal;
+    
+    // 1. Actualizamos la inversión a LIQUIDADA (Ya no cuenta como dinero en la calle)
+    const inversionRef = doc(db, INVERSIONES_COLLECTION, inversionId);
+    await updateDoc(inversionRef, {
+      estado: 'LIQUIDADA',
+      montoRetornado: montoRecibido,
+      ganancia: ganancia,
+      fechaRetorno: new Date().toISOString()
+    });
+
+    // 2. Creamos el INGRESO de dinero a la caja (Capital + Ganancia)
+    await addMovement({
+      id: `mov_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      type: MovementType.INGRESO,
+      amount: montoRecibido,
+      description: `Retorno Inversión (Utilidad: $${ganancia})`,
+      category: 'Retorno de Capital',
+      date: new Date().toISOString(),
+      status: MovementStatus.PENDIENTE_CORTE,
+      responsible: 'Sistema',
+      authorization: 'Josué M.'
+    });
+
+    return true;
+  } catch (error) {
+    console.error("Error al liquidar inversión:", error);
     throw error;
   }
 };
