@@ -1,4 +1,4 @@
-import { Movement, MovementType, MovementStatus, Inversion, InversionStatus, CorteSummary } from './types';
+import { Movement, MovementType, MovementStatus, Inversion, CorteSummary } from './types';
 
 /**
  * Servicio de Conciliación de Saldos para Corte de Caja
@@ -96,24 +96,35 @@ export const validarCorte = (conciliacion: ReturnType<typeof calcularConciliacio
  */
 export const generarCorteSummary = (
   conciliacion: ReturnType<typeof calcularConciliacion>,
-  validacion: ReturnType<typeof validarCorte>,
-  saldoInicial?: number
+  validacion: ReturnType<typeof validarCorte>
 ): CorteSummary => {
+  const {
+    saldoInicial,
+    ingresos,
+    egresos,
+    balanceCalculado,
+    conteoFisico,
+    diferencia,
+    activeMovements
+  } = conciliacion;
+
   return {
-    id: `CORTE-${Date.now().toString().slice(-6)}`,
-    date: new Date().toLocaleDateString('es-MX'),
-    saldoInicial: saldoInicial || 0,
-    ingresosTotal: conciliacion.ingresos,
-    egresosTotal: conciliacion.egresos,
-    balanceCalculado: conciliacion.balanceCalculado,
-    conteoFisico: conciliacion.conteoFisico,
-    diferencia: conciliacion.diferencia,
-    movements: conciliacion.activeMovements,
-    ajuste: validacion.requiresAdjustment ? {
-      tipo: conciliacion.diferencia > 0 ? 'SOBRANTE' : 'FALTANTE',
-      monto: Math.abs(conciliacion.diferencia),
-      descripcion: validacion.mensaje
-    } : undefined
+    id: `CORTE-${new Date().toISOString().slice(0, 10)}-${Math.random().toString(36).substr(2, 5).toUpperCase()}`,
+    date: new Date().toISOString(),
+    saldoInicial: saldoInicial,
+    totalIngresos: ingresos,
+    ingresosTotal: ingresos,
+    totalEgresos: egresos,
+    egresosTotal: egresos,
+    balanceCalculado: balanceCalculado,
+    physicalTotal: conteoFisico,
+    conteoFisico: conteoFisico,
+    diferencia: diferencia,
+    movimientosCount: activeMovements.length,
+    isBalanced: validacion.isBalanced,
+    mensajeValidacion: validacion.mensaje,
+    saldoFinal: conteoFisico,
+    movements: activeMovements
   };
 };
 

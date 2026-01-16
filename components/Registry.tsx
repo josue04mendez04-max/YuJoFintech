@@ -22,7 +22,49 @@ const Registry: React.FC<RegistryProps> = ({ movements, inversiones, onSave, onE
     date: new Date().toISOString().split('T')[0]
   });
 
-  const activeMovements = movements.filter(m => m.status !== MovementStatus.ARCHIVADO);
+  // Filtros para el historial
+  const [filterType, setFilterType] = useState<'TODOS' | 'INGRESO' | 'GASTO'>('TODOS');
+  const [showHistorical, setShowHistorical] = useState(false);
+  const [historicalFilter, setHistoricalFilter] = useState({
+    startDate: '',
+    endDate: ''
+  });
+
+  // Movimientos activos (sin corte) vs históricos (con corte)
+  const activeMovements = movements.filter(m => 
+    m.status === MovementStatus.PENDIENTE_CORTE
+  );
+
+  const historicalMovements = movements.filter(m => 
+    m.status === MovementStatus.ARCHIVADO
+  );
+
+  // Aplicar filtros de tipo
+  const getFilteredMovements = (items: Movement[]) => {
+    let filtered = items;
+    
+    if (filterType !== 'TODOS') {
+      filtered = filtered.filter(m => {
+        if (filterType === 'INGRESO') return m.type === MovementType.INGRESO;
+        if (filterType === 'GASTO') return m.type === MovementType.GASTO;
+        return true;
+      });
+    }
+
+    // Filtrar por fechas si es búsqueda histórica
+    if (showHistorical && historicalFilter.startDate && historicalFilter.endDate) {
+      const start = new Date(historicalFilter.startDate);
+      const end = new Date(historicalFilter.endDate);
+      filtered = filtered.filter(m => {
+        const mDate = new Date(m.date);
+        return mDate >= start && mDate <= end;
+      });
+    }
+
+    return filtered.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  };
+
+  const displayMovements = showHistorical ? getFilteredMovements(historicalMovements) : getFilteredMovements(activeMovements);
 
   // Función para determinar si una inversión está vencida
   const isInversionOverdue = (movement: Movement): boolean => {
@@ -144,11 +186,91 @@ const Registry: React.FC<RegistryProps> = ({ movements, inversiones, onSave, onE
 
       {/* HISTORIAL NOTARIAL */}
       <div className="glass rounded-lg sm:rounded-2xl md:rounded-[32px] p-4 sm:p-10 shadow-glass-panel border border-white/10 overflow-hidden">
-        <div className="flex flex-col gap-4 sm:flex-row sm:justify-between sm:items-center mb-6 sm:mb-10 px-2 sm:px-4">
-          <h3 className="text-white/50 text-[10px] sm:text-[11px] uppercase font-bold tracking-[0.4em]">Folios Activos • YuJo</h3>
-          <div className="hidden md:flex gap-6 text-[9px] font-bold uppercase tracking-widest text-white/40">
-            <div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-green-400"></div> Ingresos</div>
-            <div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-red-400"></div> Gastos</div>
+        <div className="flex flex-col gap-4 sm:gap-6 mb-6 sm:mb-10">
+          {/* Encabezado con leyenda */}
+          <div className="flex flex-col gap-4 sm:flex-row sm:justify-between sm:items-center px-2 sm:px-4">
+            <div>
+              <h3 className="text-white text-sm sm:text-base font-bold mb-2">
+                {showHistorical ? '📋 Cortes Históricos' : '⏱️ Folios Activos'}
+              </h3>
+              <p className="text-white/40 text-[10px] sm:text-[11px] uppercase font-bold tracking-[0.4em]">
+                {showHistorical ? 'Movimientos archivados por corte de caja' : 'Movimientos pendientes de corte • YuJo'}
+              </p>
+            </div>
+            <div className="hidden md:flex gap-6 text-[9px] font-bold uppercase tracking-widest text-white/40">
+              <div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-green-400"></div> Ingresos</div>
+              <div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-red-400"></div> Gastos</div>
+            </div>
+          </div>
+
+          {/* Controles de filtrado */}
+          <div className="flex flex-col gap-3 sm:gap-4 px-2 sm:px-4">
+            {/* Botón Buscar Corte / Folios Activos */}
+            <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+              <button
+                onClick={() => setShowHistorical(!showHistorical)}
+                className={`px-4 sm:px-6 py-2 sm:py-3 rounded-lg font-semibold text-sm transition-all flex items-center justify-center gap-2 ${
+                  !showHistorical 
+                    ? 'bg-mustard/20 border border-mustard text-mustard' 
+                    : 'bg-white/5 border border-white/10 text-white/60 hover:text-white hover:bg-white/10'
+                }`}
+              >
+                <span className="material-symbols-outlined text-base">pending_actions</span>
+                Folios Activos
+              </button>
+              <button
+                onClick={() => setShowHistorical(!showHistorical)}
+                className={`px-4 sm:px-6 py-2 sm:py-3 rounded-lg font-semibold text-sm transition-all flex items-center justify-center gap-2 ${
+                  showHistorical 
+                    ? 'bg-blue-500/20 border border-blue-400 text-blue-300' 
+                    : 'bg-white/5 border border-white/10 text-white/60 hover:text-white hover:bg-white/10'
+                }`}
+              >
+                <span className="material-symbols-outlined text-base">history</span>
+                Buscar Corte
+              </button>
+
+              {/* Filtro de tipo: Ingresos/Gastos */}
+              <select
+                value={filterType}
+                onChange={(e) => setFilterType(e.target.value as 'TODOS' | 'INGRESO' | 'GASTO')}
+                className="px-3 sm:px-4 py-2 sm:py-3 rounded-lg bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:border-mustard transition-all"
+              >
+                <option value="TODOS">Todos</option>
+                <option value="INGRESO">📈 Solo Ingresos</option>
+                <option value="GASTO">📉 Solo Egresos</option>
+              </select>
+            </div>
+
+            {/* Búsqueda de fechas (solo se muestra cuando está activada la búsqueda histórica) */}
+            {showHistorical && (
+              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 p-3 sm:p-4 bg-blue-500/10 rounded-lg border border-blue-500/20">
+                <div className="flex-1">
+                  <label className="block text-blue-300 text-xs font-bold mb-1">Desde</label>
+                  <input
+                    type="date"
+                    value={historicalFilter.startDate}
+                    onChange={(e) => setHistoricalFilter({ ...historicalFilter, startDate: e.target.value })}
+                    className="w-full px-3 py-2 rounded-lg bg-black/30 border border-blue-500/30 text-white text-sm focus:outline-none focus:border-blue-400 transition-all"
+                  />
+                </div>
+                <div className="flex-1">
+                  <label className="block text-blue-300 text-xs font-bold mb-1">Hasta</label>
+                  <input
+                    type="date"
+                    value={historicalFilter.endDate}
+                    onChange={(e) => setHistoricalFilter({ ...historicalFilter, endDate: e.target.value })}
+                    className="w-full px-3 py-2 rounded-lg bg-black/30 border border-blue-500/30 text-white text-sm focus:outline-none focus:border-blue-400 transition-all"
+                  />
+                </div>
+                <button
+                  onClick={() => setHistoricalFilter({ startDate: '', endDate: '' })}
+                  className="px-3 py-2 rounded-lg bg-red-500/20 border border-red-500/30 text-red-300 text-sm hover:bg-red-500/30 transition-all self-end"
+                >
+                  Limpiar
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
@@ -164,12 +286,14 @@ const Registry: React.FC<RegistryProps> = ({ movements, inversiones, onSave, onE
               </tr>
             </thead>
             <tbody className="text-white divide-y divide-white/5">
-              {activeMovements.length === 0 ? (
+              {displayMovements.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="py-16 sm:py-32 text-center text-white/10 italic font-serif text-lg sm:text-2xl tracking-[0.2em]">Cámara Vacía</td>
+                  <td colSpan={5} className="py-16 sm:py-32 text-center text-white/10 italic font-serif text-lg sm:text-2xl tracking-[0.2em]">
+                    {showHistorical ? 'Sin cortes en ese rango de fechas' : 'Cámara Vacía'}
+                  </td>
                 </tr>
               ) : (
-                activeMovements.map((m) => {
+                displayMovements.map((m) => {
                   const isOverdue = isInversionOverdue(m);
                   return (
                   <tr key={m.id} className={`group hover:bg-white/5 transition-all ${isOverdue ? 'bg-red-500/10 border-l-4 border-red-500' : ''}`}>

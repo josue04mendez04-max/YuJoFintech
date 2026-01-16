@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { Movement, MovementType, MovementStatus, VaultCount, CorteSummary, Inversion } from './types';
 import Dashboard from './components/Dashboard';
@@ -20,6 +19,7 @@ const App: React.FC = () => {
   // Estado de movimientos e inversiones
   const [movements, setMovements] = useState<Movement[]>([]);
   const [inversiones, setInversiones] = useState<Inversion[]>([]);
+  const [saldoInicial, setSaldoInicial] = useState(0);
   
   const [vault, setVault] = useState<VaultCount>({
     bills: { '1000': 0, '500': 0, '200': 0, '100': 0, '50': 0, '20': 0 },
@@ -162,7 +162,7 @@ const App: React.FC = () => {
       movements,
       inversiones: inversiones, // Usar inversiones del estado
       physicalTotal,
-      saldoInicial: 0 // Podría venir de un estado persistido
+      saldoInicial: saldoInicial 
     });
 
     const validacion = ConciliacionService.validarCorte(conciliacion);
@@ -175,6 +175,9 @@ const App: React.FC = () => {
       async () => {
         setSelectedCorteForPrint(summary);
         
+        // Persistir el nuevo saldo inicial para el próximo ciclo
+        setSaldoInicial(summary.saldoFinal);
+
         const idsToArchive = conciliacion.activeMovements.map(m => m.id);
 
         // Actualizamos localmente

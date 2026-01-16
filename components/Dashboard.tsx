@@ -53,48 +53,48 @@ const Dashboard: React.FC<DashboardProps> = ({ movements, vault, onOpenVault, on
   ];
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 md:gap-10">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 md:gap-6 lg:gap-10 w-full">
       {/* Tarjeta 1: Ingresos Totales */}
-      <div className="glass rounded-xl sm:rounded-2xl md:rounded-[32px] p-4 sm:p-8 md:p-12 text-white shadow-glass-panel relative overflow-hidden">
-        <div className="absolute top-0 right-0 p-6 sm:p-12 opacity-5 pointer-events-none">
-          <span className="material-symbols-outlined text-[4rem] sm:text-[8rem] md:text-[12rem]">trending_up</span>
+      <div className="glass rounded-lg sm:rounded-xl md:rounded-2xl lg:rounded-[32px] p-3 sm:p-6 md:p-8 lg:p-12 text-white shadow-glass-panel relative overflow-hidden min-h-[140px] sm:min-h-[160px] md:min-h-[180px] flex flex-col justify-center">
+        <div className="absolute top-0 right-0 p-2 sm:p-6 md:p-8 lg:p-12 opacity-5 pointer-events-none">
+          <span className="material-symbols-outlined text-[3rem] sm:text-[4rem] md:text-[6rem] lg:text-[12rem]">trending_up</span>
         </div>
         <div className="relative z-10">
-          <p className="text-white/40 font-bold uppercase tracking-[0.4em] text-[8px] sm:text-[9px] md:text-[10px] mb-2 sm:mb-4">Ingresos Totales</p>
-          <h3 className="text-3xl sm:text-5xl md:text-8xl font-serif font-bold italic tracking-tighter text-green-400 glow">
+          <p className="text-white/40 font-bold uppercase tracking-[0.3em] text-[7px] sm:text-[8px] md:text-[9px] lg:text-[10px] mb-1 sm:mb-3">Ingresos Totales</p>
+          <h3 className="text-2xl sm:text-3xl md:text-5xl lg:text-8xl font-serif font-bold italic tracking-tighter text-green-400 glow break-words">
             ${stats.ingresos.toLocaleString(undefined, { minimumFractionDigits: 2 })}
           </h3>
-          <p className="text-white/50 text-xs sm:text-sm mt-4">Dinero que ha entrado en el ciclo</p>
+          <p className="text-white/50 text-[10px] sm:text-xs md:text-sm mt-2 sm:mt-3">Dinero que ha entrado</p>
         </div>
       </div>
 
       {/* Tarjeta 2: Egresos Totales */}
-      <div className="glass rounded-xl sm:rounded-2xl md:rounded-[32px] p-4 sm:p-8 md:p-12 text-white shadow-glass-panel relative overflow-hidden">
-        <div className="absolute top-0 right-0 p-6 sm:p-12 opacity-5 pointer-events-none">
-          <span className="material-symbols-outlined text-[4rem] sm:text-[8rem] md:text-[12rem]">trending_down</span>
+      <div className="glass rounded-lg sm:rounded-xl md:rounded-2xl lg:rounded-[32px] p-3 sm:p-6 md:p-8 lg:p-12 text-white shadow-glass-panel relative overflow-hidden min-h-[140px] sm:min-h-[160px] md:min-h-[180px] flex flex-col justify-center">
+        <div className="absolute top-0 right-0 p-2 sm:p-6 md:p-8 lg:p-12 opacity-5 pointer-events-none">
+          <span className="material-symbols-outlined text-[3rem] sm:text-[4rem] md:text-[6rem] lg:text-[12rem]">trending_down</span>
         </div>
         <div className="relative z-10">
-          <p className="text-white/40 font-bold uppercase tracking-[0.4em] text-[8px] sm:text-[9px] md:text-[10px] mb-2 sm:mb-4">Egresos Totales</p>
-          <h3 className="text-3xl sm:text-5xl md:text-8xl font-serif font-bold italic tracking-tighter text-red-400 glow">
+          <p className="text-white/40 font-bold uppercase tracking-[0.3em] text-[7px] sm:text-[8px] md:text-[9px] lg:text-[10px] mb-1 sm:mb-3">Egresos Totales</p>
+          <h3 className="text-2xl sm:text-3xl md:text-5xl lg:text-8xl font-serif font-bold italic tracking-tighter text-red-400 glow break-words">
             ${stats.gastos.toLocaleString(undefined, { minimumFractionDigits: 2 })}
           </h3>
-          <p className="text-white/50 text-xs sm:text-sm mt-4">Dinero que ha salido de la caja</p>
+          <p className="text-white/50 text-[10px] sm:text-xs md:text-sm mt-2 sm:mt-3">Dinero que ha salido</p>
         </div>
       </div>
 
       {/* Tarjeta 3: Balance Actual (Grande, Central) */}
-      <div className="lg:col-span-3 glass rounded-xl sm:rounded-2xl md:rounded-[32px] p-6 sm:p-12 md:p-16 text-white shadow-glass-panel relative overflow-hidden">
-        <div className="absolute top-0 right-0 p-6 sm:p-12 opacity-10 pointer-events-none">
-          <span className="material-symbols-outlined text-[8rem] sm:text-[12rem] md:text-[16rem]">account_balance_wallet</span>
+      <div className="sm:col-span-2 lg:col-span-3 glass rounded-lg sm:rounded-xl md:rounded-2xl lg:rounded-[32px] p-4 sm:p-8 md:p-12 lg:p-16 text-white shadow-glass-panel relative overflow-hidden min-h-[200px] sm:min-h-[220px] md:min-h-[240px]">
+        <div className="absolute top-0 right-0 p-2 sm:p-6 md:p-8 lg:p-12 opacity-10 pointer-events-none">
+          <span className="material-symbols-outlined text-[6rem] sm:text-[8rem] md:text-[12rem] lg:text-[16rem]">account_balance_wallet</span>
         </div>
         <div className="relative z-10 text-center">
-          <p className="text-white/40 font-bold uppercase tracking-[0.4em] text-[8px] sm:text-[9px] md:text-[10px] mb-4 sm:mb-6">Balance Actual</p>
-          <h2 className={`text-5xl sm:text-7xl md:text-9xl font-serif font-bold italic tracking-tighter mustard-glow ${
+          <p className="text-white/40 font-bold uppercase tracking-[0.3em] text-[7px] sm:text-[8px] md:text-[9px] lg:text-[10px] mb-2 sm:mb-4">Balance Actual</p>
+          <h2 className={`text-4xl sm:text-5xl md:text-7xl lg:text-9xl font-serif font-bold italic tracking-tighter mustard-glow break-words ${
             stats.balanceTotal >= 0 ? 'text-green-300' : 'text-red-300'
           }`}>
             ${stats.balanceTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}
           </h2>
-          <p className="text-white/50 text-sm sm:text-base mt-6">Dinero disponible en caja = Ingresos - Egresos</p>
+          <p className="text-white/50 text-[10px] sm:text-xs md:text-sm mt-4">Dinero disponible en caja = Ingresos - Egresos</p>
           
           {/* Gráfico de tendencia */}
           <div className="mt-8 h-20 sm:h-32 md:h-40 w-full">

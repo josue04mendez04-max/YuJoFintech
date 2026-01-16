@@ -1,4 +1,3 @@
-
 export enum MovementType {
   INGRESO = 'INGRESO',
   GASTO = 'GASTO'
@@ -64,4 +63,12 @@ export interface CorteSummary {
     monto: number;
     descripcion: string;
   };
+
+  totalIngresos: number;
+  totalEgresos: number;
+  physicalTotal: number;
+  movimientosCount: number;
+  isBalanced: boolean;
+  mensajeValidacion: string;
+  saldoFinal: number; // Saldo con el que cierra, será el inicial del próximo ciclo
 }
