@@ -6,40 +6,42 @@ import { AreaChart, Area, ResponsiveContainer } from 'recharts';
 interface DashboardProps {
   movements: Movement[];
   vault: VaultCount;
+  saldoInicial: number;
   onOpenVault: () => void;
   onPerformCut: () => void;
 }
 
-const Dashboard: React.FC<DashboardProps> = ({ movements, vault, onOpenVault, onPerformCut }) => {
+const Dashboard: React.FC<DashboardProps> = ({ movements, vault, saldoInicial, onOpenVault, onPerformCut }) => {
   const stats = useMemo(() => {
     // Filtrar solo movimientos pendientes de corte (ciclo actual)
     const activeCycle = movements.filter(m => m.status === MovementStatus.PENDIENTE_CORTE);
     
-    // Calcular ingresos totales
+    // Calcular ingresos totales del ciclo
     const ingresos = activeCycle
       .filter(m => m.type === MovementType.INGRESO)
       .reduce((a, b) => a + b.amount, 0);
       
-    // Calcular gastos totales
+    // Calcular gastos totales del ciclo
     const gastos = activeCycle
       .filter(m => m.type === MovementType.GASTO)
       .reduce((a, b) => a + b.amount, 0);
     
-    // Balance actual: Ingresos - Gastos
-    const balanceTotal = ingresos - gastos;
+    // Balance actual: Saldo Inicial + Ingresos - Gastos
+    // El saldoInicial es el dinero que quedó del corte anterior
+    const balanceTotal = saldoInicial + ingresos - gastos;
 
     return { 
       ingresos,
       gastos,
       balanceTotal
     };
-  }, [movements]);
+  }, [movements, saldoInicial]);
 
   const physicalTotal = useMemo(() => {
     if (!vault) return 0;
     let total = 0;
-    Object.entries(vault.bills || {}).forEach(([denom, count]) => total += Number(denom) * (count || 0));
-    Object.entries(vault.coins || {}).forEach(([denom, count]) => total += Number(denom) * (count || 0));
+    Object.entries(vault.bills || {}).forEach(([denom, count]) => total += Number(denom) * Number(count || 0));
+    Object.entries(vault.coins || {}).forEach(([denom, count]) => total += Number(denom) * Number(count || 0));
     return total;
   }, [vault]);
 
@@ -94,7 +96,7 @@ const Dashboard: React.FC<DashboardProps> = ({ movements, vault, onOpenVault, on
           }`}>
             ${stats.balanceTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}
           </h2>
-          <p className="text-white/50 text-[10px] sm:text-xs md:text-sm mt-4">Dinero disponible en caja = Ingresos - Egresos</p>
+          <p className="text-white/50 text-[10px] sm:text-xs md:text-sm mt-4">Dinero disponible en caja{saldoInicial > 0 ? ` (incluye $${saldoInicial.toLocaleString()} del corte anterior)` : ''}</p>
           
           {/* Gráfico de tendencia */}
           <div className="mt-8 h-20 sm:h-32 md:h-40 w-full">

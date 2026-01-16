@@ -350,3 +350,59 @@ export const listenToVaultCount = (
     console.error('Error listening to vault count:', error);
   });
 };
+
+// ============ SALDO INICIAL (Persistencia entre cortes) ============
+
+/**
+ * Guardar el saldo inicial en Firebase
+ * Este saldo es el que queda después de un corte de caja
+ */
+export const saveSaldoInicial = async (saldo: number): Promise<void> => {
+  try {
+    const saldoRef = doc(db, 'configuracion', 'saldoInicial');
+    await setDoc(saldoRef, {
+      saldo,
+      updatedAt: new Date().toISOString()
+    });
+    console.log('YuJo: Saldo inicial guardado:', saldo);
+  } catch (error) {
+    console.error('Error saving saldo inicial to Firestore:', error);
+    throw error;
+  }
+};
+
+/**
+ * Obtener el saldo inicial desde Firebase
+ */
+export const getSaldoInicial = async (): Promise<number> => {
+  try {
+    const saldoRef = doc(db, 'configuracion', 'saldoInicial');
+    const snapshot = await (await import('firebase/firestore')).getDoc(saldoRef);
+    if (snapshot.exists()) {
+      return snapshot.data().saldo || 0;
+    }
+    return 0;
+  } catch (error) {
+    console.error('Error getting saldo inicial from Firestore:', error);
+    return 0;
+  }
+};
+
+/**
+ * Escuchar cambios en el saldo inicial en tiempo real
+ */
+export const listenToSaldoInicial = (
+  callback: (saldo: number) => void
+): Unsubscribe => {
+  const saldoRef = doc(db, 'configuracion', 'saldoInicial');
+  
+  return onSnapshot(saldoRef, (snapshot) => {
+    if (snapshot.exists()) {
+      callback(snapshot.data().saldo || 0);
+    } else {
+      callback(0);
+    }
+  }, (error) => {
+    console.error('Error listening to saldo inicial:', error);
+  });
+};

@@ -69,11 +69,23 @@ const App: React.FC = () => {
     }
   }, []);
 
+  // Función para cargar saldo inicial
+  const fetchSaldoInicial = useCallback(async () => {
+    try {
+      const saldo = await FirestoreService.getSaldoInicial();
+      setSaldoInicial(saldo);
+      console.log("YuJo: Saldo inicial cargado:", saldo);
+    } catch (err: any) {
+      console.error(`YuJo Saldo Inicial Error:`, err);
+    }
+  }, []);
+
   // Sincronización al iniciar
   useEffect(() => {
     fetchMovements();
     fetchInversiones();
-  }, [fetchMovements, fetchInversiones]);
+    fetchSaldoInicial();
+  }, [fetchMovements, fetchInversiones, fetchSaldoInicial]);
 
   const physicalTotal = useMemo(() => {
     let t = 0;
@@ -190,6 +202,8 @@ const App: React.FC = () => {
         // Enviamos a Firebase Firestore
         try {
           await FirestoreService.performCorte(idsToArchive, summary.id);
+          // Guardar el nuevo saldo inicial en Firebase para persistencia
+          await FirestoreService.saveSaldoInicial(summary.saldoFinal);
         } catch (err) { 
           console.error("Error al registrar corte en Firebase", err);
         }
@@ -275,6 +289,7 @@ const App: React.FC = () => {
               <Dashboard 
                 movements={movements}
                 vault={vault}
+                saldoInicial={saldoInicial}
                 onOpenVault={() => setView('contabilidad')}
                 onPerformCut={() => setView('corte')}
               />
