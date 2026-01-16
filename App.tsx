@@ -69,23 +69,95 @@ const App: React.FC = () => {
     }
   }, []);
 
-  // Función para cargar saldo inicial
-  const fetchSaldoInicial = useCallback(async () => {
+  // Función para calcular saldo del último corte basado en movimientos archivados
+  const calcularSaldoDesdeCortes = useCallback((movimientos: Movement[]): number => {
+    // Buscar el último cutId (corte más reciente)
+    const movimientosArchivados = movimientos.filter(m => m.status === MovementStatus.ARCHIVADO && m.cutId);
+    
+    if (movimientosArchivados.length === 0) {
+      console.log("YuJo: No hay cortes anteriores, saldo inicial = 0");
+      return 0;
+    }
+
+    // Obtener todos los cutIds únicos y ordenarlos por fecha
+    const cutIds = [...new Set(movimientosArchivados.map(m => m.cutId))];
+    
+    // Calcular el balance de TODOS los cortes (suma acumulada de todos los cortes)
+    let saldoAcumulado = 0;
+    
+    cutIds.forEach(cutId => {
+      const movimientosDelCorte = movimientosArchivados.filter(m => m.cutId === cutId);
+      
+      const ingresosCorte = movimientosDelCorte
+        .filter(m => m.type === MovementType.INGRESO)
+        .reduce((sum, m) => sum + m.amount, 0);
+      
+      const egresosCorte = movimientosDelCorte
+        .filter(m => m.type === MovementType.GASTO)
+        .reduce((sum, m) => sum + m.amount, 0);
+      
+      saldoAcumulado += (ingresosCorte - egresosCorte);
+    });
+
+    console.log("YuJo: Saldo calculado desde cortes anteriores:", saldoAcumulado);
+    return saldoAcumulado;
+  }, []);
+
+  // Función para cargar saldo inicial (desde Firebase o calculado desde cortes)
+  const fetchSaldoInicial = useCallback(async (movimientos?: Movement[]) => {
     try {
-      const saldo = await FirestoreService.getSaldoInicial();
-      setSaldoInicial(saldo);
-      console.log("YuJo: Saldo inicial cargado:", saldo);
+      // Primero intentar obtener de Firebase
+      const saldoGuardado = await FirestoreService.getSaldoInicial();
+      
+      if (saldoGuardado > 0) {
+        setSaldoInicial(saldoGuardado);
+        console.log("YuJo: Saldo inicial cargado desde Firebase:", saldoGuardado);
+        return;
+      }
+
+      // Si no hay saldo guardado, calcularlo desde los cortes
+      if (movimientos && movimientos.length > 0) {
+        const saldoCalculado = calcularSaldoDesdeCortes(movimientos);
+        setSaldoInicial(saldoCalculado);
+        
+        // Guardar en Firebase para futuras sesiones
+        if (saldoCalculado > 0) {
+          await FirestoreService.saveSaldoInicial(saldoCalculado);
+        }
+      }
     } catch (err: any) {
       console.error(`YuJo Saldo Inicial Error:`, err);
     }
-  }, []);
+  }, [calcularSaldoDesdeCortes]);
 
-  // Sincronización al iniciar
+  // Sincronización al iniciar - cargar movimientos primero, luego calcular saldo
   useEffect(() => {
-    fetchMovements();
+    const initializeData = async () => {
+      try {
+        // Cargar movimientos primero
+        const data = await FirestoreService.fetchMovements();
+        setMovements(data);
+        setSyncStatus('synced');
+        console.log("YuJo: Sincronización exitosa con Firebase Firestore.");
+        
+        // Luego cargar/calcular saldo inicial basado en los movimientos
+        await fetchSaldoInicial(data);
+      } catch (err: any) {
+        console.error(`YuJo Sync Error:`, err);
+        setLastSyncError(err.message || "Error al conectar con Firebase Firestore");
+        setSyncStatus('error');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    setIsLoading(true);
+    setSyncStatus('syncing');
+    setLastSyncError(null);
+    
+    initializeData();
     fetchInversiones();
-    fetchSaldoInicial();
-  }, [fetchMovements, fetchInversiones, fetchSaldoInicial]);
+  }, [fetchInversiones, fetchSaldoInicial]);
 
   const physicalTotal = useMemo(() => {
     let t = 0;
